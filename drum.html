@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rhythm Arranger Pro - 節奏編曲訓練機</title>
+<style>
+:root {
+  --bg: #0c0e14;
+  --panel: #161923;
+  --panel-alt: #1e2230;
+  --panel-hover: #272d40;
+  --line: #2e3447;
+  --line-strong: #4a5472;
+  --text: #f1f4fa;
+  --muted: #8b95ad;
+  --accent: #ffb703;
+  --accent-glow: rgba(255, 183, 3, 0.4);
+  --loop-color: rgba(56, 189, 248, 0.28);
+  --loop-border: #38bdf8;
+  
+  --hh: #38bdf8;
+  --bd: #fb7185;
+  --sd: #c084fc;
+  --ch: #34d399;
+  --ruler: #fbbf24;
+  --bar-line: #f59e0b;
+
+  --cell-even: #191c28;
+  --cell-odd: #131620;
+  --cell-hover: #23283a;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f2f5fa;
+    --panel: #ffffff;
+    --panel-alt: #edf1f8;
+    --panel-hover: #e2e8f2;
+    --line: #d1d7e5;
+    --line-strong: #9da8c2;
+    --text: #141720;
+    --muted: #64748b;
+    --accent: #d97706;
+    --loop-color: rgba(14, 165, 233, 0.2);
+    --loop-border: #0284c7;
+    --cell-even: #ffffff;
+    --cell-odd: #f3f6fb;
+    --cell-hover: #e3e8f3;
+    --bar-line: #ea580c;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  padding: 14px;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+h1 {
+  font-size: 1.35rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 2px 0 0 0;
+}
+
+.badge-counter {
+  background: var(--panel-alt);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+select, input[type=number], input[type=text] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+select:focus, input:focus {
+  border-color: var(--accent);
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #0f1117;
+  background: var(--accent);
+  transition: all 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+button:hover { filter: brightness(1.12); }
+button:active { transform: scale(0.97); }
+button.secondary {
+  background: var(--panel-alt);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+button.secondary:hover {
+  background: var(--panel-hover);
+  border-color: var(--line-strong);
+}
+button.danger {
+  background: #dc2626;
+  color: #fff;
+}
+button.active-toggle {
+  background: #0284c7;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.timeline-outer {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Timeline Ruler with In-Out Loop Handles & Playhead Anchor */
+.timeline-ruler-wrap {
+  position: relative;
+  height: 32px;
+  background: var(--panel-alt);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.timeline-ruler-wrap::-webkit-scrollbar { display: none; }
+
+.timeline-ruler {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-width: max-content;
+  cursor: pointer;
+}
+
+.tl-bar-tick {
+  width: 90px;
+  flex: 0 0 90px;
+  border-left: 1px solid var(--line);
+  position: relative;
+  padding-left: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+}
+.tl-bar-tick.beat-sub {
+  border-left: 1px dashed rgba(255,255,255,0.08);
+}
+
+/* Loop Region Range Box */
+.loop-range-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--loop-color);
+  border-left: 3px solid var(--loop-border);
+  border-right: 3px solid var(--loop-border);
+  pointer-events: none;
+  z-index: 5;
+  transition: left 0.05s linear, width 0.05s linear;
+}
+
+/* Draggable Timeline Anchor / Playhead */
+.tl-playhead-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ff0055;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 0 8px #ff0055;
+}
+.tl-playhead-line::before {
+  content: '▼';
+  position: absolute;
+  top: -2px;
+  left: -5px;
+  font-size: 11px;
+  color: #ff0055;
+}
+
+/* Timeline Block Tracks */
+.timeline-track-wrap {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  position: relative;
+  min-height: 80px;
+  background: var(--bg);
+  padding: 8px 0;
+}
+
+.timeline-track {
+  display: flex;
+  min-width: max-content;
+  height: 64px;
+  position: relative;
+  padding: 0 8px;
+  align-items: center;
+  gap: 4px;
+}
+
+.tl-block-item {
+  height: 54px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 10px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: transform 0.1s, box-shadow 0.1s;
+  position: relative;
+  color: #fff;
+  flex-shrink: 0;
+}
+.tl-block-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.tl-block-item.selected {
+  outline: 2px solid #fff;
+  box-shadow: 0 0 12px var(--accent);
+}
+.tl-block-item .block-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+.tl-block-item .block-meta {
+  font-size: 0.68rem;
+  opacity: 0.85;
+  display: flex;
+  justify-content: space-between;
+}
+
+.library-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.lib-card {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--panel-alt);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: all 0.12s;
+}
+.lib-card:hover {
+  border-color: var(--line-strong);
+  background: var(--panel-hover);
+}
+.lib-card.active-editing {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  background: var(--panel-hover);
+}
+
+.block-color-badge {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.seq-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  position: relative;
+  scrollbar-width: thin;
+}
+
+.seq-grid {
+  display: flex;
+  flex-direction: column;
+  min-width: max-content;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  height: 48px;
+}
+.track-row:last-child { border-bottom: none; }
+
+.track-label {
+  width: 110px;
+  flex: 0 0 110px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  position: sticky;
+  left: 0;
+  background: var(--panel);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  border-right: 2px solid var(--line-strong);
+}
+
+.track-label.hh { color: var(--hh); }
+.track-label.sd { color: var(--sd); }
+.track-label.bd { color: var(--bd); }
+.track-label.ch { color: var(--ch); }
+.track-label.ruler { color: var(--ruler); font-size: 0.72rem; }
+
+.steps-container {
+  display: flex;
+  height: 100%;
+}
+
+.cell {
+  position: relative;
+  width: 36px;
+  height: 100%;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-right: 1px solid var(--line);
+  transition: background-color 0.08s ease;
+}
+
+.cell.bg-even { background: var(--cell-even); }
+.cell.bg-odd  { background: var(--cell-odd); }
+.cell:hover   { background: var(--cell-hover); }
+
+/* Distinct Beat & Measure Dividers */
+.cell.beat-start {
+  border-left: 2px solid var(--line-strong);
+}
+.cell.measure-start {
+  border-left: 4px solid var(--bar-line) !important;
+}
+
+/* Dots and Badges */
+.note-dot {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+.cell.active .note-dot { display: flex; }
+
+.hh .note-dot {
+  background: var(--hh);
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+.sd .note-dot { background: var(--sd); }
+.bd .note-dot { background: var(--bd); }
+
+.chord-badge {
+  display: none;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #052618;
+  background: var(--ch);
+  padding: 3px 6px;
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(52, 211, 153, 0.4);
+  white-space: nowrap;
+}
+.cell.has-chord .chord-badge { display: block; }
+
+.cell.playhead {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--accent-glow) !important;
+}
+
+.ruler-text {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+.ruler-text.main-beat { color: var(--accent); font-size: 0.9rem; }
+.ruler-text.and-beat  { color: #38bdf8; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  padding: 20px;
+  width: 90%;
+  max-width: 440px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.7);
+}
+.modal-title {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-group { margin-bottom: 16px; }
+.modal-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+.grid-select {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.grid-select.qual-grid { grid-template-columns: repeat(3, 1fr); }
+.modal-btn {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 9px 0;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.modal-btn.active {
+  background: var(--ch);
+  color: #062e20;
+  border-color: var(--ch);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+}
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>🎸 Rhythm Arranger Pro</h1>
+      <p class="sub">Block 模組化時間軸 · 自由匡選小節循環 · 錨點跳轉 · 人聲數拍 (1 & 2 &) · 和弦伴奏</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="badge-counter" id="songPosDisplay">BAR 1 : 1.0</div>
+      <button id="playBtn" style="font-size:0.95rem; padding:8px 18px;">▶ 播放 Play</button>
+      <button id="stopBtn" class="secondary">⏹ 重設 Reset</button>
+    </div>
+  </header>
+
+  <!-- Master Control Panel -->
+  <div class="panel toolbar">
+    <div class="field">
+      <label for="bpm">速度 BPM: <span id="bpmVal">100</span></label>
+      <input type="range" id="bpm" min="40" max="220" value="100" style="width:110px;">
+    </div>
+
+    <div class="field">
+      <label for="timesig">拍號 (Time Sig)</label>
+      <select id="timesig">
+        <option value="4-4">4/4 拍 (標準四拍)</option>
+        <option value="3-4">3/4 拍 (三拍子)</option>
+        <option value="2-4">2/4 拍 (進行曲)</option>
+        <option value="6-8">6/8 拍 (搖擺三連音)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="voiceEngine">數拍發聲引擎 (Engine)</label>
+      <select id="voiceEngine">
+        <option value="webaudio" selected>⚡ Web Audio 穿透教練音 (首音爆裂·超清晰)</option>
+        <option value="vintage">📻 Web Audio 經典節拍音 (溫和共振峰)</option>
+        <option value="tts">🗣️ 系統人聲 TTS (支援延遲補償)</option>
+      </select>
+    </div>
+
+    <div class="field" id="punchField">
+      <label for="consonantPunch">子音咬字強度 (Attack Punch): <span id="consonantPunchVal">100</span>%</label>
+      <input type="range" id="consonantPunch" min="30" max="220" value="100" style="width:110px;">
+    </div>
+
+    <div class="field">
+      <label for="voiceMode">數拍劃分 (Count Division)</label>
+      <select id="voiceMode">
+        <option value="eighth">數正反拍 (1 & 2 & 3 & 4 &)</option>
+        <option value="quarter">只數正拍 (1 2 3 4)</option>
+        <option value="none">關閉人聲 (Mute)</option>
+      </select>
+    </div>
+
+    <div class="field" id="ttsOffsetField" style="display:none;">
+      <label for="ttsOffset">人聲提前補償: <span id="ttsOffsetVal">80</span> ms</label>
+      <input type="range" id="ttsOffset" min="0" max="200" value="80" style="width:110px;">
+    </div>
+
+    <div class="field">
+      <label for="transpose">移調 (Transpose): <span id="transVal">0</span></label>
+      <div style="display:flex; gap:4px;">
+        <button id="transDown" class="secondary" style="padding:6px 9px;">-1</button>
+        <button id="transReset" class="secondary" style="padding:6px 9px;">0</button>
+        <button id="transUp" class="secondary" style="padding:6px 9px;">+1</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>區間循環 (Loop)</label>
+      <button id="loopToggleBtn" class="active-toggle" style="padding:6px 12px;">🔁 循環匡選區開</button>
+    </div>
+
+    <div class="field">
+      <label>播放模式</label>
+      <div style="display:flex; gap:4px;">
+        <button id="modeTimelineBtn" style="padding:6px 10px;">時間軸全曲</button>
+        <button id="modeBlockBtn" class="secondary" style="padding:6px 10px;">單一 Block</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>🎼 Timeline 編曲時間軸 (點擊尺規移動播放錨點 / 拖曳設定匡選循環)</span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:0.75rem; color:var(--muted);">匡選範圍:</span>
+        <label style="font-size:0.75rem;">從第</label>
+        <input type="number" id="loopStartBar" min="1" max="64" value="1" style="width:50px; padding:3px 5px;">
+        <label style="font-size:0.75rem;">到第</label>
+        <input type="number" id="loopEndBar" min="1" max="64" value="4" style="width:50px; padding:3px 5px;">
+        <label style="font-size:0.75rem;">小節</label>
+        <button id="appendActiveBlockBtn" style="padding:5px 10px;">+ 放入當前 Block</button>
+        <button id="clearTimelineBtn" class="secondary" style="padding:5px 10px;">清空時間軸</button>
+      </div>
+    </div>
+
+    <div class="timeline-outer">
+      <!-- Timeline Ruler & Loop Region -->
+      <div class="timeline-ruler-wrap" id="tlRulerWrap">
+        <div class="timeline-ruler" id="timelineRuler">
+          <div class="loop-range-overlay" id="loopOverlay"></div>
+          <div class="tl-playhead-line" id="tlPlayhead"></div>
+          <!-- Ticks dynamically injected -->
+        </div>
+      </div>
+
+      <!-- Timeline Block Instances Track -->
+      <div class="timeline-track-wrap" id="tlTrackWrap">
+        <div class="timeline-track" id="timelineTrack">
+          <!-- Placed blocks injected here -->
+        </div>
+      </div>
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px;">
+      <span>💡 提示：在上方藍色/灰色的尺規刻度上「點擊」可立即跳轉播放位置 (Anchor)；也可直接輸入小節匡選循環。</span>
+      <div id="selectedTlBlockActions" style="display:none; gap:6px; align-items:center;">
+        <span id="selectedBlockName" style="color:var(--accent); font-weight:bold;">已選中 Block</span>
+        <button id="dupTlBlockBtn" class="secondary" style="padding:3px 8px; font-size:0.7rem;">複製</button>
+        <button id="delTlBlockBtn" class="danger" style="padding:3px 8px; font-size:0.7rem;">刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">
+      <span>📦 Block 模組庫 (點擊切換正在編輯的節奏型)</span>
+      <div style="display:flex; gap:6px;">
+        <button id="newBlockBtn" class="secondary" style="padding:4px 9px; font-size:0.75rem;">+ 新增 Block</button>
+        <button id="dupBlockBtn" class="secondary" style="padding:4px 9px; font-size:0.75rem;">複製當前</button>
+      </div>
+    </div>
+    <div class="library-grid" id="blockLibraryGrid">
+      <!-- Injected pattern cards -->
+    </div>
+  </div>
+
+  <div class="panel" style="padding:12px;">
+    <div class="section-title" style="margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span id="editorBlockTitle" style="font-size:1rem; color:var(--accent);">當前編輯：Block 1</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:0.75rem; color:var(--muted);">名稱:</label>
+          <input type="text" id="editBlockNameInput" style="width:110px; padding:3px 6px;">
+          <label style="font-size:0.75rem; color:var(--muted);">小節數:</label>
+          <input type="number" id="editBlockBarsInput" min="1" max="16" value="2" style="width:55px; padding:3px 6px;">
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <div class="field" style="flex-direction:row; align-items:center;">
+          <label style="margin-right:4px;">和弦模式:</label>
+          <button id="modeClickBtn" style="padding:4px 8px; font-size:0.75rem;">彈窗點選</button>
+          <button id="modeBrushBtn" class="secondary" style="padding:4px 8px; font-size:0.75rem;">畫筆蓋章</button>
+        </div>
+
+        <div id="brushSelects" style="display:none; gap:4px;">
+          <select id="brushRoot" style="color:var(--ch); font-weight:bold; padding:3px 6px;">
+            <option value="0">C</option><option value="1">C#</option>
+            <option value="2">D</option><option value="3">D#</option>
+            <option value="4">E</option><option value="5">F</option>
+            <option value="6">F#</option><option value="7">G</option>
+            <option value="8">G#</option><option value="9">A</option>
+            <option value="10">A#</option><option value="11">B</option>
+          </select>
+          <select id="brushQual" style="color:var(--ch); font-weight:bold; padding:3px 6px;">
+            <option value="Maj">Major</option>
+            <option value="m">minor</option>
+            <option value="7">Dom 7</option>
+            <option value="m7">min 7</option>
+            <option value="maj7">Maj 7</option>
+          </select>
+        </div>
+
+        <button id="clearGridBtn" class="secondary" style="padding:4px 10px; font-size:0.75rem;">清空此 Block</button>
+      </div>
+    </div>
+
+    <!-- Step Grid -->
+    <div class="seq-wrapper" id="scrollContainer">
+      <div class="seq-grid" id="seqGrid"></div>
+    </div>
+
+    <div style="display:flex; gap:16px; margin-top:10px; font-size:0.75rem; color:var(--muted); flex-wrap:wrap;">
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <span style="width:14px; height:4px; background:var(--bar-line); border-radius:2px;"></span>小節線 (Bar Line)
+      </span>
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <span style="width:10px; height:10px; border-radius:2px; transform:rotate(45deg); background:var(--hh);"></span>Hi-Hat (腳踏鈸)
+      </span>
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <span style="width:10px; height:10px; border-radius:50%; background:var(--sd);"></span>Snare (小鼓)
+      </span>
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <span style="width:10px; height:10px; border-radius:50%; background:var(--bd);"></span>Bass Drum (大鼓)
+      </span>
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <span style="padding:2px 4px; border-radius:3px; background:var(--ch); color:#000; font-weight:bold; font-size:0.68rem;">C</span>和弦伴奏 (Chords)
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="chordModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🎸 選擇和弦 (Select Chord)</span>
+      <span id="modalPosInfo" style="font-size:0.85rem; color:var(--accent);">第 1 小節 · 第 1 拍</span>
+    </div>
+    <div class="modal-group">
+      <label>根音 (Root Note)</label>
+      <div class="grid-select" id="modalRootGrid"></div>
+    </div>
+    <div class="modal-group">
+      <label>和弦性質 (Quality)</label>
+      <div class="grid-select qual-grid" id="modalQualGrid"></div>
+    </div>
+    <div class="modal-footer">
+      <button id="modalClearBtn" class="secondary" style="margin-right:auto; color:var(--bd);">清除此拍和弦</button>
+      <button id="modalCancelBtn" class="secondary">取消</button>
+      <button id="modalApplyBtn">確認套用</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const CHORD_INTERVALS = {
+  'Maj': [0, 4, 7, 12, 16],
+  'm':   [0, 3, 7, 12, 15],
+  '7':   [0, 4, 7, 10, 16],
+  'm7':  [0, 3, 7, 10, 15],
+  'maj7':[0, 4, 7, 11, 16]
+};
+
+const BLOCK_COLORS = [
+  '#4f46e5', '#0284c7', '#059669', '#d97706',
+  '#db2777', '#7c3aed', '#dc2626', '#0d9488'
+];
+
+const TRACK_DEFS = [
+  { id: 'ruler', name: '尺規 Beat', cls: 'ruler' },
+  { id: 'ch', name: 'Chords 和弦', cls: 'ch' },
+  { id: 'hh', name: 'Hi-Hat 鈸', cls: 'hh' },
+  { id: 'sd', name: 'Snare 小鼓', cls: 'sd' },
+  { id: 'bd', name: 'Bass 大鼓', cls: 'bd' }
+];
+
+// Audio & Playback Engine State
+let audioCtx = null;
+let playing = false;
+let timerId = null;
+let playMode = 'timeline'; // 'timeline' or 'block'
+let globalTranspose = 0;
+let isLoopEnabled = true;
+
+// Timing metrics
+let stepsPerMeasure = 16;
+let groupSize = 4;
+let bpm = 100;
+
+// Block Library and Timeline Storage
+let blocks = [];
+let activeBlockId = null;
+let timeline = []; // Array of instances: { id, blockId }
+let selectedTlIndex = null;
+
+// Playhead & Scrubber State
+let currentTimelineBar = 1; // 1-indexed for visual
+let currentStepInBar = 0;   // 0 .. stepsPerMeasure-1
+let loopStartBar = 1;
+let loopEndBar = 4;
+
+// Modal & Chord Brush State
+let chordMode = 'click';
+let modalTargetStep = null;
+let modalSelectedRoot = 0;
+let modalSelectedQual = 'Maj';
+
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playHiHat(time) {
+  const ctx = getAudioContext();
+  const bufferSize = ctx.sampleRate * 0.045;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 8500;
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.35, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  noise.start(time);
+  noise.stop(time + 0.045);
+}
+
+function playSnare(time) {
+  const ctx = getAudioContext();
+  const bufferSize = ctx.sampleRate * 0.14;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 1800;
+
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.65, time);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.13);
+
+  noise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(ctx.destination);
+  noise.start(time);
+  noise.stop(time + 0.14);
+
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(190, time);
+  const oscGain = ctx.createGain();
+  oscGain.gain.setValueAtTime(0.7, time);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.09);
+
+  osc.connect(oscGain);
+  oscGain.connect(ctx.destination);
+  osc.start(time);
+  osc.stop(time + 0.1);
+}
+
+function playBass(time) {
+  const ctx = getAudioContext();
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(145, time);
+  osc.frequency.exponentialRampToValueAtTime(38, time + 0.24);
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(1.0, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.28);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(time);
+  osc.stop(time + 0.3);
+}
+
+function playGuitarChord(chordObj, time) {
+  if (!chordObj) return;
+  const ctx = getAudioContext();
+  const rootIndex = (chordObj.rootIndex + globalTranspose) % 12;
+  const effectiveRoot = rootIndex < 0 ? rootIndex + 12 : rootIndex;
+  const intervals = CHORD_INTERVALS[chordObj.qual] || CHORD_INTERVALS['Maj'];
+  const baseMidi = 48 + effectiveRoot; // C3 + root
+
+  // Acoustic strumming simulation (offset staggered attack)
+  intervals.forEach((interval, idx) => {
+    const noteMidi = baseMidi + interval;
+    const freq = 440 * Math.pow(2, (noteMidi - 69) / 12);
+    const strumOffset = idx * 0.015;
+    const noteTime = time + strumOffset;
+
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, noteTime);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1500, noteTime);
+    filter.frequency.exponentialRampToValueAtTime(450, noteTime + 1.2);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.24, noteTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 1.4);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(noteTime);
+    osc.stop(noteTime + 1.45);
+  });
+}
+
+// -------------------------------------------------------------
+// 零延遲 Web Audio 人聲共振峰語音合成器 (Formant Voice Synthesizer - Gen 2)
+// 大幅強化第一子音的爆裂衝擊 (Plosives / Fricatives) 與咬字開合度
+// -------------------------------------------------------------
+function playZeroLatencyVoice(word, time, style = 'punchy') {
+  const ctx = getAudioContext();
+  const punchFactor = (parseInt(document.getElementById('consonantPunch')?.value || '100', 10)) / 100;
+  const isVintage = style === 'vintage';
+
+  // 1. 各單詞精準聲學參數配置 (F1, F2, F3 共振峰 + 基頻 pitch + 瞬態 transient)
+  const acousticProfiles = {
+    '1': { // "One" [wʌn]: 緊縮圓唇滑音轉中央母音，加上起始點的瞬態低音衝擊
+      dur: 0.11,
+      pitch: isVintage ? [160, 130] : [175, 135],
+      formants: [
+        { f: 580, q: 7, g: 1.0 },   // F1 喉共振
+        { f: 1050, q: 6, g: 0.9 },  // F2
+        { f: 2350, q: 8, g: 0.4 }   // F3
+      ],
+      // [w] 唇音壓縮起音 (Thump transient)
+      transient: { type: 'kick-thump', freq: 280, endFreq: 90, dur: 0.022, gain: 0.7 * punchFactor }
+    },
+    '2': { // "Two" [tʰu:]: 強大的舌尖齒齦爆破音 [t] (高頻噪聲 4500-6000Hz) + 後高母音
+      dur: 0.12,
+      pitch: isVintage ? [180, 140] : [195, 145],
+      formants: [
+        { f: 340, q: 8, g: 1.0 },
+        { f: 880, q: 7, g: 0.75 },
+        { f: 2150, q: 9, g: 0.4 }
+      ],
+      // 尖銳子音 [t] 爆裂 (Burst of white noise at 5200Hz)
+      transient: { type: 'burst-hp', freq: 5200, dur: 0.028, gain: 0.95 * punchFactor }
+    },
+    '3': { // "Three" [θɹi:]: 齒間摩擦氣流音 [θ] (3800Hz) + 亮麗前高母音 [i:] (F2高達 2350Hz)
+      dur: 0.125,
+      pitch: isVintage ? [170, 135] : [185, 140],
+      formants: [
+        { f: 280, q: 7, g: 0.9 },
+        { f: 2350, q: 9, g: 1.2 },  // 穿透感明亮 F2
+        { f: 2950, q: 8, g: 0.5 }
+      ],
+      // 咬舌摩擦氣流 [th]
+      transient: { type: 'burst-bp', freq: 3900, q: 3.5, dur: 0.038, gain: 0.75 * punchFactor }
+    },
+    '4': { // "Four" [fɔ:]: 唇齒摩擦音 [f] (帶通風切聲 2400Hz) + 開闊後中母音 [ɔ:]
+      dur: 0.13,
+      pitch: isVintage ? [150, 120] : [160, 125],
+      formants: [
+        { f: 540, q: 6, g: 1.1 },
+        { f: 980, q: 7, g: 0.8 },
+        { f: 2400, q: 8, g: 0.35 }
+      ],
+      // [f] 唇齒吐氣摩擦瞬態
+      transient: { type: 'burst-bp', freq: 2400, q: 2.0, dur: 0.04, gain: 0.7 * punchFactor }
+    },
+    '&': { // "And" [ænd]: 吉他反拍之王！要求短、脆、彈、開口大 [æ] + 瞬間釋放
+      dur: 0.075,
+      pitch: isVintage ? [220, 190] : [240, 205], // 略高於正拍，突顯律動分界
+      formants: [
+        { f: 750, q: 6, g: 1.2 },   // 開放母音
+        { f: 1800, q: 8, g: 1.0 },
+        { f: 2600, q: 9, g: 0.5 }
+      ],
+      // 拍點瞬間按鍵擊打感 (Click Transient)
+      transient: { type: 'click', freq: 1600, dur: 0.015, gain: 0.85 * punchFactor }
+    }
+  };
+
+  const prof = acousticProfiles[word] || acousticProfiles['1'];
+  const masterGain = ctx.createGain();
+  masterGain.connect(ctx.destination);
+
+  // A. 觸發第一子音/開頭瞬態打擊聲 (First Consonant Attack / Transient)
+  if (prof.transient && prof.transient.gain > 0) {
+    const t = prof.transient;
+    if (t.type === 'kick-thump') {
+      // 模擬 "One" 的圓唇低頻發射衝擊
+      const tOsc = ctx.createOscillator();
+      const tGain = ctx.createGain();
+      tOsc.type = 'sine';
+      tOsc.frequency.setValueAtTime(t.freq, time);
+      tOsc.frequency.exponentialRampToValueAtTime(t.endFreq, time + t.dur);
+      tGain.gain.setValueAtTime(t.gain * 0.8, time);
+      tGain.gain.exponentialRampToValueAtTime(0.001, time + t.dur);
+      tOsc.connect(tGain);
+      tGain.connect(masterGain);
+      tOsc.start(time);
+      tOsc.stop(time + t.dur + 0.01);
+    } else if (t.type === 'click') {
+      // 模擬 "&" 的瞬間尖銳卡點
+      const tOsc = ctx.createOscillator();
+      const tGain = ctx.createGain();
+      tOsc.type = 'triangle';
+      tOsc.frequency.setValueAtTime(t.freq, time);
+      tOsc.frequency.exponentialRampToValueAtTime(300, time + t.dur);
+      tGain.gain.setValueAtTime(t.gain, time);
+      tGain.gain.exponentialRampToValueAtTime(0.001, time + t.dur);
+      tOsc.connect(tGain);
+      tGain.connect(masterGain);
+      tOsc.start(time);
+      tOsc.stop(time + t.dur + 0.01);
+    } else {
+      // 模擬 "Two", "Three", "Four" 的高頻破音/摩擦雜訊 (Burst noise)
+      const bufSize = Math.floor(ctx.sampleRate * t.dur);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 1.3);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+
+      const nFilter = ctx.createBiquadFilter();
+      if (t.type === 'burst-hp') {
+        nFilter.type = 'highpass';
+        nFilter.frequency.setValueAtTime(t.freq, time);
+      } else {
+        nFilter.type = 'bandpass';
+        nFilter.frequency.setValueAtTime(t.freq, time);
+        nFilter.Q.setValueAtTime(t.q || 3.0, time);
+      }
+
+      const nGain = ctx.createGain();
+      nGain.gain.setValueAtTime(t.gain * 0.9, time);
+      nGain.gain.exponentialRampToValueAtTime(0.001, time + t.dur);
+
+      noise.connect(nFilter);
+      nFilter.connect(nGain);
+      nGain.connect(masterGain);
+      noise.start(time);
+      noise.stop(time + t.dur + 0.005);
+    }
+  }
+
+  // B. 聲帶基音震動 (Glottal Vocal Wave)
+  const voiceOsc = ctx.createOscillator();
+  voiceOsc.type = isVintage ? 'triangle' : 'sawtooth'; // 鋸齒波提供極豐富的母音共振泛音
+  voiceOsc.frequency.setValueAtTime(prof.pitch[0], time);
+  voiceOsc.frequency.exponentialRampToValueAtTime(prof.pitch[1], time + prof.dur);
+
+  // 母音包絡線 (Vocal Amplitude Envelope)
+  const vGain = ctx.createGain();
+  // 起音快但稍微讓出 2ms 給第一子音展現攻擊力
+  vGain.gain.setValueAtTime(0.001, time);
+  vGain.gain.linearRampToValueAtTime(0.65, time + 0.012);
+  vGain.gain.exponentialRampToValueAtTime(0.001, time + prof.dur);
+
+  // C. 三重共振峰濾波群 (F1, F2, F3 Parallel Formant Bank)
+  prof.formants.forEach(fm => {
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(fm.f, time);
+    filter.Q.setValueAtTime(fm.q, time);
+
+    const fGain = ctx.createGain();
+    fGain.gain.setValueAtTime(fm.g, time);
+
+    voiceOsc.connect(filter);
+    filter.connect(fGain);
+    fGain.connect(vGain);
+  });
+
+  vGain.connect(masterGain);
+  voiceOsc.start(time);
+  voiceOsc.stop(time + prof.dur + 0.02);
+}
+
+// -------------------------------------------------------------
+// 系統 TTS 預快取與延遲補償器
+// -------------------------------------------------------------
+let ttsCache = {};
+function initTtsCache() {
+  if (!('speechSynthesis' in window)) return;
+  ['1', '2', '3', '4', 'and'].forEach(w => {
+    const u = new SpeechSynthesisUtterance(w);
+    u.rate = 1.6;
+    u.pitch = 1.1;
+    u.volume = 1.0;
+    u.lang = 'en-US';
+    ttsCache[w] = u;
+  });
+}
+initTtsCache();
+
+function triggerVoiceCount(stepInMeasure, audioTime) {
+  const voiceMode = document.getElementById('voiceMode').value;
+  if (voiceMode === 'none') return;
+
+  const beatIndex = Math.floor(stepInMeasure / groupSize) + 1;
+  const intraBeat = stepInMeasure % groupSize;
+
+  let textToSay = null;
+  if (intraBeat === 0) {
+    textToSay = String(beatIndex);
+  } else if (voiceMode === 'eighth' && intraBeat === Math.floor(groupSize / 2)) {
+    textToSay = '&';
+  }
+
+  if (!textToSay) return;
+
+  const engine = document.getElementById('voiceEngine').value;
+
+  if (engine === 'webaudio') {
+    // 方案 1：穿透教練音 (首音子音爆發強化)
+    playZeroLatencyVoice(textToSay, audioTime, 'punchy');
+  } else if (engine === 'vintage') {
+    // 方案 2：經典溫和節拍機音
+    playZeroLatencyVoice(textToSay, audioTime, 'vintage');
+  } else if (engine === 'tts' && 'speechSynthesis' in window) {
+    // 方案 3：系統 TTS 語音模式
+    try {
+      const u = ttsCache[textToSay] || new SpeechSynthesisUtterance(textToSay);
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+}
+
+function createDefaultPattern(bars) {
+  const total = bars * stepsPerMeasure;
+  return {
+    hh: new Array(total).fill(false),
+    sd: new Array(total).fill(false),
+    bd: new Array(total).fill(false),
+    ch: new Array(total).fill(null)
+  };
+}
+
+function createNewBlock(name, bars, colorIdx = 0) {
+  const id = 'blk_' + Math.random().toString(36).substr(2, 9);
+  const color = BLOCK_COLORS[colorIdx % BLOCK_COLORS.length];
+  const block = {
+    id,
+    name: name || `Pattern ${blocks.length + 1}`,
+    bars: bars || 2,
+    color,
+    pattern: createDefaultPattern(bars || 2)
+  };
+
+  // Populate basic rock beat as starter on Block 1
+  if (blocks.length === 0) {
+    for (let b = 0; b < block.bars; b++) {
+      const offset = b * stepsPerMeasure;
+      // 8th note hats
+      for (let s = 0; s < stepsPerMeasure; s += 2) block.pattern.hh[offset + s] = true;
+      // Kick on 1 and 3
+      block.pattern.bd[offset + 0] = true;
+      block.pattern.bd[offset + 8] = true;
+      // Snare on 2 and 4
+      block.pattern.sd[offset + 4] = true;
+      block.pattern.sd[offset + 12] = true;
+      // Basic chords
+      block.pattern.ch[offset + 0] = { rootIndex: (b * 5) % 12, qual: 'Maj' };
+    }
+  }
+
+  blocks.push(block);
+  return block;
+}
+
+function getActiveBlock() {
+  return blocks.find(b => b.id === activeBlockId) || blocks[0];
+}
+
+function renderBlockLibrary() {
+  const container = document.getElementById('blockLibraryGrid');
+  container.innerHTML = '';
+
+  blocks.forEach((blk, idx) => {
+    const card = document.createElement('div');
+    card.className = `lib-card ${blk.id === activeBlockId ? 'active-editing' : ''}`;
+    card.innerHTML = `
+      <div class="block-color-badge" style="background:${blk.color};"></div>
+      <span>${blk.name}</span>
+      <span style="font-size:0.7rem; color:var(--muted);">(${blk.bars}小節)</span>
+    `;
+
+    card.addEventListener('click', () => {
+      activeBlockId = blk.id;
+      loadBlockIntoEditor();
+      renderBlockLibrary();
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function loadBlockIntoEditor() {
+  const blk = getActiveBlock();
+  if (!blk) return;
+
+  document.getElementById('editorBlockTitle').textContent = `當前編輯：${blk.name}`;
+  document.getElementById('editBlockNameInput').value = blk.name;
+  document.getElementById('editBlockBarsInput').value = blk.bars;
+
+  renderSequencer();
+}
+
+function getTotalTimelineBars() {
+  return timeline.reduce((acc, item) => {
+    const b = blocks.find(x => x.id === item.blockId);
+    return acc + (b ? b.bars : 0);
+  }, 0);
+}
+
+function renderTimeline() {
+  const totalBars = Math.max(getTotalTimelineBars(), 8);
+  const rulerEl = document.getElementById('timelineRuler');
+  
+  // Clean ticks except overlay and playhead
+  const existingTicks = rulerEl.querySelectorAll('.tl-bar-tick');
+  existingTicks.forEach(t => t.remove());
+
+  for (let b = 1; b <= totalBars; b++) {
+    const tick = document.createElement('div');
+    tick.className = 'tl-bar-tick';
+    tick.dataset.bar = b;
+    tick.innerHTML = `<span>BAR ${b}</span>`;
+
+    // Click to scrub / set Anchor
+    tick.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setTimelinePlayhead(b, 0);
+    });
+
+    rulerEl.appendChild(tick);
+  }
+
+  updateLoopRangeVisual();
+  updateTimelinePlayheadVisual();
+
+  // Render Blocks on Track
+  const trackEl = document.getElementById('timelineTrack');
+  trackEl.innerHTML = '';
+
+  if (timeline.length === 0) {
+    trackEl.innerHTML = `<span style="padding:10px; font-size:0.8rem; color:var(--muted);">時間軸目前是空的，請點擊「+ 放入當前 Block」開始編排樂曲。</span>`;
+  } else {
+    timeline.forEach((item, index) => {
+      const blk = blocks.find(b => b.id === item.blockId);
+      if (!blk) return;
+
+      const blockEl = document.createElement('div');
+      blockEl.className = `tl-block-item ${index === selectedTlIndex ? 'selected' : ''}`;
+      blockEl.style.background = blk.color;
+      // Width corresponds to 90px per bar
+      blockEl.style.width = `${blk.bars * 90 - 4}px`;
+
+      blockEl.innerHTML = `
+        <div class="block-top">
+          <span>${blk.name}</span>
+          <span style="font-size:0.7rem; opacity:0.9;">${blk.bars} Bars</span>
+        </div>
+        <div class="block-meta">
+          <span>${getChordsPreview(blk)}</span>
+          <span>#${index + 1}</span>
+        </div>
+      `;
+
+      blockEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedTlIndex = index;
+        updateSelectedBlockPanel();
+        renderTimeline();
+      });
+
+      trackEl.appendChild(blockEl);
+    });
+  }
+}
+
+function getChordsPreview(blk) {
+  if (!blk || !blk.pattern.ch) return '';
+  const list = blk.pattern.ch.filter(Boolean);
+  if (list.length === 0) return 'No Chords';
+  const names = list.map(c => getTransposedChordName(c));
+  const unique = Array.from(new Set(names));
+  return unique.slice(0, 3).join('-');
+}
+
+function updateSelectedBlockPanel() {
+  const panel = document.getElementById('selectedTlBlockActions');
+  if (selectedTlIndex !== null && timeline[selectedTlIndex]) {
+    const item = timeline[selectedTlIndex];
+    const blk = blocks.find(b => b.id === item.blockId);
+    document.getElementById('selectedBlockName').textContent = `已選中 #${selectedTlIndex + 1}: ${blk ? blk.name : ''}`;
+    panel.style.display = 'flex';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function updateLoopRangeVisual() {
+  const overlay = document.getElementById('loopOverlay');
+  if (!isLoopEnabled) {
+    overlay.style.display = 'none';
+    return;
+  }
+  overlay.style.display = 'block';
+  const barWidth = 90;
+  const left = (loopStartBar - 1) * barWidth;
+  const width = (loopEndBar - loopStartBar + 1) * barWidth;
+  overlay.style.left = `${Math.max(0, left)}px`;
+  overlay.style.width = `${Math.max(barWidth, width)}px`;
+}
+
+function setTimelinePlayhead(bar, step) {
+  currentTimelineBar = bar;
+  currentStepInBar = step;
+  updateTimelinePlayheadVisual();
+  updateSongPositionDisplay();
+}
+
+function updateTimelinePlayheadVisual() {
+  const playhead = document.getElementById('tlPlayhead');
+  const barWidth = 90;
+  const stepOffset = (currentStepInBar / stepsPerMeasure) * barWidth;
+  const totalLeft = (currentTimelineBar - 1) * barWidth + stepOffset;
+  playhead.style.left = `${totalLeft}px`;
+
+  // Auto-scroll timeline to keep playhead visible
+  const rulerWrap = document.getElementById('tlRulerWrap');
+  const trackWrap = document.getElementById('tlTrackWrap');
+  if (totalLeft > rulerWrap.scrollLeft + rulerWrap.clientWidth - 80 || totalLeft < rulerWrap.scrollLeft + 40) {
+    const targetScroll = Math.max(0, totalLeft - 140);
+    rulerWrap.scrollLeft = targetScroll;
+    trackWrap.scrollLeft = targetScroll;
+  }
+}
+
+function updateSongPositionDisplay() {
+  const beat = (Math.floor(currentStepInBar / groupSize) + 1);
+  const sub = (currentStepInBar % groupSize);
+  document.getElementById('songPosDisplay').textContent = `BAR ${currentTimelineBar} : ${beat}.${sub}`;
+}
+
+function getRulerSymbol(step) {
+  const measureStep = step % stepsPerMeasure;
+  const beat = Math.floor(measureStep / groupSize) + 1;
+  const sub = measureStep % groupSize;
+  const half = Math.floor(groupSize / 2);
+
+  if (sub === 0) return { text: String(beat), isMain: true, isAnd: false };
+  if (sub === half) return { text: '&', isMain: false, isAnd: true };
+  return { text: '·', isMain: false, isAnd: false };
+}
+
+function getTransposedChordName(chordObj) {
+  if (!chordObj) return '';
+  const rootIndex = (chordObj.rootIndex + globalTranspose) % 12;
+  const effective = rootIndex < 0 ? rootIndex + 12 : rootIndex;
+  const qual = chordObj.qual === 'Maj' ? '' : chordObj.qual;
+  return NOTE_NAMES[effective] + qual;
+}
+
+function renderSequencer() {
+  const blk = getActiveBlock();
+  if (!blk) return;
+
+  const totalSteps = blk.bars * stepsPerMeasure;
+  const gridEl = document.getElementById('seqGrid');
+  gridEl.innerHTML = '';
+
+  TRACK_DEFS.forEach(track => {
+    const row = document.createElement('div');
+    row.className = 'track-row ' + track.cls;
+
+    const label = document.createElement('div');
+    label.className = `track-label ${track.cls}`;
+    label.textContent = track.name;
+    row.appendChild(label);
+
+    const stepsContainer = document.createElement('div');
+    stepsContainer.className = 'steps-container';
+
+    for (let step = 0; step < totalSteps; step++) {
+      const cell = document.createElement('div');
+      const beatGroup = Math.floor(step / groupSize);
+      cell.className = `cell ${beatGroup % 2 === 0 ? 'bg-even' : 'bg-odd'}`;
+      cell.dataset.step = step;
+
+      if (step % groupSize === 0) cell.classList.add('beat-start');
+      if (step % stepsPerMeasure === 0) cell.classList.add('measure-start');
+
+      if (track.id === 'ruler') {
+        const symbol = getRulerSymbol(step);
+        const span = document.createElement('span');
+        span.className = `ruler-text ${symbol.isMain ? 'main-beat' : ''} ${symbol.isAnd ? 'and-beat' : ''}`;
+        span.textContent = symbol.text;
+        cell.appendChild(span);
+      } else if (track.id === 'ch') {
+        const badge = document.createElement('div');
+        badge.className = 'chord-badge';
+        if (blk.pattern.ch[step]) {
+          cell.classList.add('has-chord');
+          badge.textContent = getTransposedChordName(blk.pattern.ch[step]);
+        }
+        cell.appendChild(badge);
+        cell.addEventListener('click', () => handleChordCellClick(step));
+      } else {
+        const dot = document.createElement('div');
+        dot.className = 'note-dot';
+        if (blk.pattern[track.id][step]) cell.classList.add('active');
+        cell.appendChild(dot);
+
+        cell.addEventListener('click', () => {
+          blk.pattern[track.id][step] = !blk.pattern[track.id][step];
+          cell.classList.toggle('active');
+          renderTimeline(); // update chord preview/metrics
+        });
+      }
+
+      stepsContainer.appendChild(cell);
+    }
+
+    row.appendChild(stepsContainer);
+    gridEl.appendChild(row);
+  });
+}
+
+function handleChordCellClick(step) {
+  const blk = getActiveBlock();
+  if (!blk) return;
+
+  if (chordMode === 'brush') {
+    const root = parseInt(document.getElementById('brushRoot').value, 10);
+    const qual = document.getElementById('brushQual').value;
+    const existing = blk.pattern.ch[step];
+
+    if (existing && existing.rootIndex === root && existing.qual === qual) {
+      blk.pattern.ch[step] = null;
+    } else {
+      blk.pattern.ch[step] = { rootIndex: root, qual };
+    }
+    renderSequencer();
+    renderTimeline();
+  } else {
+    openChordModal(step);
+  }
+}
+
+function openChordModal(step) {
+  const blk = getActiveBlock();
+  modalTargetStep = step;
+  const measure = Math.floor(step / stepsPerMeasure) + 1;
+  const beat = Math.floor((step % stepsPerMeasure) / groupSize) + 1;
+  document.getElementById('modalPosInfo').textContent = `${blk.name} · 第 ${measure} 小節 · 第 ${beat} 拍`;
+
+  const existing = blk.pattern.ch[step];
+  if (existing) {
+    modalSelectedRoot = existing.rootIndex;
+    modalSelectedQual = existing.qual;
+  } else {
+    modalSelectedRoot = 0;
+    modalSelectedQual = 'Maj';
+  }
+
+  renderModalGrids();
+  document.getElementById('chordModal').classList.add('open');
+}
+
+function closeChordModal() {
+  document.getElementById('chordModal').classList.remove('open');
+  modalTargetStep = null;
+}
+
+function renderModalGrids() {
+  const rootGrid = document.getElementById('modalRootGrid');
+  rootGrid.innerHTML = '';
+  NOTE_NAMES.forEach((name, idx) => {
+    const btn = document.createElement('div');
+    btn.className = `modal-btn ${idx === modalSelectedRoot ? 'active' : ''}`;
+    btn.textContent = name;
+    btn.addEventListener('click', () => {
+      modalSelectedRoot = idx;
+      renderModalGrids();
+    });
+    rootGrid.appendChild(btn);
+  });
+
+  const qualGrid = document.getElementById('modalQualGrid');
+  qualGrid.innerHTML = '';
+  Object.keys(CHORD_INTERVALS).forEach(qual => {
+    const btn = document.createElement('div');
+    btn.className = `modal-btn ${qual === modalSelectedQual ? 'active' : ''}`;
+    btn.textContent = qual;
+    btn.addEventListener('click', () => {
+      modalSelectedQual = qual;
+      renderModalGrids();
+    });
+    qualGrid.appendChild(btn);
+  });
+}
+
+document.getElementById('modalApplyBtn').addEventListener('click', () => {
+  const blk = getActiveBlock();
+  if (modalTargetStep !== null && blk) {
+    blk.pattern.ch[modalTargetStep] = { rootIndex: modalSelectedRoot, qual: modalSelectedQual };
+    renderSequencer();
+    renderTimeline();
+  }
+  closeChordModal();
+});
+
+document.getElementById('modalClearBtn').addEventListener('click', () => {
+  const blk = getActiveBlock();
+  if (modalTargetStep !== null && blk) {
+    blk.pattern.ch[modalTargetStep] = null;
+    renderSequencer();
+    renderTimeline();
+  }
+  closeChordModal();
+});
+
+document.getElementById('modalCancelBtn').addEventListener('click', closeChordModal);
+
+function getStepInterval() {
+  return (60 / bpm) / 4; // 16th note timing
+}
+
+function resolveTimelineCurrentEvent() {
+  // If timeline is empty or mode is 'block', play the current active editor block
+  if (playMode === 'block' || timeline.length === 0) {
+    const blk = getActiveBlock();
+    const barInBlock = (currentTimelineBar - 1) % blk.bars;
+    const globalStepInPattern = barInBlock * stepsPerMeasure + currentStepInBar;
+    return {
+      block: blk,
+      stepInPattern: globalStepInPattern
+    };
+  }
+
+  // Find which block covers currentTimelineBar
+  let accumulatedBars = 0;
+  for (let i = 0; i < timeline.length; i++) {
+    const item = timeline[i];
+    const blk = blocks.find(b => b.id === item.blockId);
+    if (!blk) continue;
+
+    if (currentTimelineBar <= accumulatedBars + blk.bars) {
+      const barInsideBlock = currentTimelineBar - 1 - accumulatedBars;
+      const stepInPattern = barInsideBlock * stepsPerMeasure + currentStepInBar;
+      return { block: blk, stepInPattern };
+    }
+    accumulatedBars += blk.bars;
+  }
+
+  return null;
+}
+
+function tick() {
+  const time = getAudioContext().currentTime + 0.02;
+  const evt = resolveTimelineCurrentEvent();
+
+  if (evt && evt.block) {
+    const { block, stepInPattern } = evt;
+    if (block.pattern.hh[stepInPattern]) playHiHat(time);
+    if (block.pattern.sd[stepInPattern]) playSnare(time);
+    if (block.pattern.bd[stepInPattern]) playBass(time);
+    if (block.pattern.ch[stepInPattern]) playGuitarChord(block.pattern.ch[stepInPattern], time);
+
+    // Update Pattern Grid Playhead if current active block is playing
+    if (block.id === activeBlockId) {
+      updateGridPlayhead(stepInPattern);
+    }
+  }
+
+  triggerVoiceCount(currentStepInBar, time);
+  updateTimelinePlayheadVisual();
+  updateSongPositionDisplay();
+
+  // Step advancement
+  currentStepInBar++;
+  if (currentStepInBar >= stepsPerMeasure) {
+    currentStepInBar = 0;
+    currentTimelineBar++;
+
+    // Check Loop Boundaries
+    if (isLoopEnabled) {
+      if (currentTimelineBar > loopEndBar) {
+        currentTimelineBar = loopStartBar;
+      }
+    } else {
+      const totalBars = playMode === 'block' ? getActiveBlock().bars : Math.max(getTotalTimelineBars(), 1);
+      if (currentTimelineBar > totalBars) {
+        currentTimelineBar = 1;
+      }
+    }
+  }
+}
+
+function updateGridPlayhead(step) {
+  document.querySelectorAll('.cell.playhead').forEach(c => c.classList.remove('playhead'));
+  const activeCells = document.querySelectorAll(`.cell[data-step="${step}"]`);
+  activeCells.forEach(c => c.classList.add('playhead'));
+}
+
+function startPlayback() {
+  getAudioContext();
+  playing = true;
+  document.getElementById('playBtn').textContent = '⏸ 暫停 Pause';
+
+  // If outside loop range, jump to loop start
+  if (isLoopEnabled && (currentTimelineBar < loopStartBar || currentTimelineBar > loopEndBar)) {
+    currentTimelineBar = loopStartBar;
+    currentStepInBar = 0;
+  }
+
+  tick();
+  timerId = setInterval(tick, getStepInterval() * 1000);
+}
+
+function stopPlayback(resetToStart = false) {
+  playing = false;
+  document.getElementById('playBtn').textContent = '▶ 播放 Play';
+  clearInterval(timerId);
+  document.querySelectorAll('.cell.playhead').forEach(c => c.classList.remove('playhead'));
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+  if (resetToStart) {
+    currentTimelineBar = isLoopEnabled ? loopStartBar : 1;
+    currentStepInBar = 0;
+    updateTimelinePlayheadVisual();
+    updateSongPositionDisplay();
+  }
+}
+
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (playing) stopPlayback(false);
+  else startPlayback();
+});
+
+document.getElementById('stopBtn').addEventListener('click', () => {
+  stopPlayback(true);
+});
+
+document.getElementById('bpm').addEventListener('input', (e) => {
+  bpm = Number(e.target.value);
+  document.getElementById('bpmVal').textContent = bpm;
+  if (playing) {
+    clearInterval(timerId);
+    timerId = setInterval(tick, getStepInterval() * 1000);
+  }
+});
+
+// Engine Switch & Offset Control
+const voiceEngineSelect = document.getElementById('voiceEngine');
+const ttsOffsetField = document.getElementById('ttsOffsetField');
+const punchField = document.getElementById('punchField');
+const consonantPunchInput = document.getElementById('consonantPunch');
+const consonantPunchVal = document.getElementById('consonantPunchVal');
+
+voiceEngineSelect.addEventListener('change', () => {
+  const isTts = voiceEngineSelect.value === 'tts';
+  ttsOffsetField.style.display = isTts ? 'flex' : 'none';
+  punchField.style.display = isTts ? 'none' : 'flex';
+});
+
+if (consonantPunchInput) {
+  consonantPunchInput.addEventListener('input', (e) => {
+    consonantPunchVal.textContent = e.target.value;
+  });
+}
+
+const ttsOffsetInput = document.getElementById('ttsOffset');
+const ttsOffsetVal = document.getElementById('ttsOffsetVal');
+ttsOffsetInput.addEventListener('input', (e) => {
+  ttsOffsetVal.textContent = e.target.value;
+});
+
+document.getElementById('timesig').addEventListener('change', (e) => {
+  const [num, den] = e.target.value.split('-').map(Number);
+  stepsPerMeasure = den === 4 ? num * 4 : num * 2;
+  groupSize = den === 4 ? 4 : 3;
+  // Re-render blocks
+  blocks.forEach(b => {
+    b.pattern = createDefaultPattern(b.bars);
+  });
+  renderSequencer();
+  renderTimeline();
+});
+
+// Transpose Controls
+document.getElementById('transUp').addEventListener('click', () => {
+  globalTranspose = (globalTranspose + 1) % 12;
+  document.getElementById('transVal').textContent = globalTranspose > 0 ? `+${globalTranspose}` : globalTranspose;
+  renderSequencer();
+  renderTimeline();
+});
+
+document.getElementById('transDown').addEventListener('click', () => {
+  globalTranspose = (globalTranspose - 1) % 12;
+  document.getElementById('transVal').textContent = globalTranspose > 0 ? `+${globalTranspose}` : globalTranspose;
+  renderSequencer();
+  renderTimeline();
+});
+
+document.getElementById('transReset').addEventListener('click', () => {
+  globalTranspose = 0;
+  document.getElementById('transVal').textContent = '0';
+  renderSequencer();
+  renderTimeline();
+});
+
+// Loop & In-Out Controls
+const loopToggleBtn = document.getElementById('loopToggleBtn');
+loopToggleBtn.addEventListener('click', () => {
+  isLoopEnabled = !isLoopEnabled;
+  if (isLoopEnabled) {
+    loopToggleBtn.classList.add('active-toggle');
+    loopToggleBtn.textContent = '🔁 循環匡選區開';
+  } else {
+    loopToggleBtn.classList.remove('active-toggle');
+    loopToggleBtn.textContent = '🔁 循環關閉';
+  }
+  updateLoopRangeVisual();
+});
+
+const loopStartInput = document.getElementById('loopStartBar');
+const loopEndInput = document.getElementById('loopEndBar');
+
+function handleLoopChange() {
+  let s = parseInt(loopStartInput.value, 10) || 1;
+  let e = parseInt(loopEndInput.value, 10) || 1;
+  if (s > e) e = s;
+  loopStartBar = s;
+  loopEndBar = e;
+  updateLoopRangeVisual();
+}
+loopStartInput.addEventListener('change', handleLoopChange);
+loopEndInput.addEventListener('change', handleLoopChange);
+
+// Play Mode Switch
+const modeTimelineBtn = document.getElementById('modeTimelineBtn');
+const modeBlockBtn = document.getElementById('modeBlockBtn');
+
+modeTimelineBtn.addEventListener('click', () => {
+  playMode = 'timeline';
+  modeTimelineBtn.classList.remove('secondary');
+  modeBlockBtn.classList.add('secondary');
+});
+
+modeBlockBtn.addEventListener('click', () => {
+  playMode = 'block';
+  modeBlockBtn.classList.remove('secondary');
+  modeTimelineBtn.classList.add('secondary');
+});
+
+// Chord Input Mode Toggle
+const modeClickBtn = document.getElementById('modeClickBtn');
+const modeBrushBtn = document.getElementById('modeBrushBtn');
+const brushSelects = document.getElementById('brushSelects');
+
+modeClickBtn.addEventListener('click', () => {
+  chordMode = 'click';
+  modeClickBtn.classList.remove('secondary');
+  modeBrushBtn.classList.add('secondary');
+  brushSelects.style.display = 'none';
+});
+
+modeBrushBtn.addEventListener('click', () => {
+  chordMode = 'brush';
+  modeBrushBtn.classList.remove('secondary');
+  modeClickBtn.classList.add('secondary');
+  brushSelects.style.display = 'flex';
+});
+
+// Block Editor Controls
+document.getElementById('editBlockNameInput').addEventListener('input', (e) => {
+  const blk = getActiveBlock();
+  if (blk) {
+    blk.name = e.target.value;
+    document.getElementById('editorBlockTitle').textContent = `當前編輯：${blk.name}`;
+    renderBlockLibrary();
+    renderTimeline();
+  }
+});
+
+document.getElementById('editBlockBarsInput').addEventListener('change', (e) => {
+  const blk = getActiveBlock();
+  if (blk) {
+    const newBars = Math.max(1, parseInt(e.target.value, 10) || 1);
+    const oldTotal = blk.bars * stepsPerMeasure;
+    const newTotal = newBars * stepsPerMeasure;
+    blk.bars = newBars;
+
+    ['hh', 'sd', 'bd', 'ch'].forEach(track => {
+      const arr = new Array(newTotal).fill(track === 'ch' ? null : false);
+      for (let i = 0; i < Math.min(oldTotal, newTotal); i++) {
+        arr[i] = blk.pattern[track][i];
+      }
+      blk.pattern[track] = arr;
+    });
+
+    renderSequencer();
+    renderTimeline();
+    renderBlockLibrary();
+  }
+});
+
+document.getElementById('clearGridBtn').addEventListener('click', () => {
+  const blk = getActiveBlock();
+  if (blk) {
+    blk.pattern = createDefaultPattern(blk.bars);
+    renderSequencer();
+    renderTimeline();
+  }
+});
+
+// Block Creation / Duplication
+document.getElementById('newBlockBtn').addEventListener('click', () => {
+  const blk = createNewBlock(`Block ${blocks.length + 1}`, 2, blocks.length);
+  activeBlockId = blk.id;
+  renderBlockLibrary();
+  loadBlockIntoEditor();
+});
+
+document.getElementById('dupBlockBtn').addEventListener('click', () => {
+  const curr = getActiveBlock();
+  const dup = createNewBlock(`${curr.name} (Copy)`, curr.bars, blocks.length);
+  dup.pattern = JSON.parse(JSON.stringify(curr.pattern));
+  activeBlockId = dup.id;
+  renderBlockLibrary();
+  loadBlockIntoEditor();
+});
+
+// Timeline Insertions & Deletions
+document.getElementById('appendActiveBlockBtn').addEventListener('click', () => {
+  timeline.push({
+    id: 'inst_' + Math.random().toString(36).substr(2, 7),
+    blockId: activeBlockId
+  });
+  renderTimeline();
+});
+
+document.getElementById('clearTimelineBtn').addEventListener('click', () => {
+  timeline = [];
+  selectedTlIndex = null;
+  updateSelectedBlockPanel();
+  renderTimeline();
+});
+
+document.getElementById('dupTlBlockBtn').addEventListener('click', () => {
+  if (selectedTlIndex !== null && timeline[selectedTlIndex]) {
+    const clone = { ...timeline[selectedTlIndex], id: 'inst_' + Math.random().toString(36).substr(2, 7) };
+    timeline.splice(selectedTlIndex + 1, 0, clone);
+    renderTimeline();
+  }
+});
+
+document.getElementById('delTlBlockBtn').addEventListener('click', () => {
+  if (selectedTlIndex !== null && timeline[selectedTlIndex]) {
+    timeline.splice(selectedTlIndex, 1);
+    selectedTlIndex = null;
+    updateSelectedBlockPanel();
+    renderTimeline();
+  }
+});
+
+// Click outside chord modal to close
+document.getElementById('chordModal').addEventListener('click', (e) => {
+  if (e.target.id === 'chordModal') closeChordModal();
+});
+
+window.addEventListener('load', () => {
+  // Create preset blocks: Intro, Verse, Chorus
+  const intro = createNewBlock('Intro', 2, 0);
+  const verse = createNewBlock('Verse A', 2, 1);
+  const chorus = createNewBlock('Chorus', 2, 2);
+
+  // Setup basic chords for Verse & Chorus
+  verse.pattern.ch[0] = { rootIndex: 0, qual: 'Maj' }; // C
+  verse.pattern.ch[16] = { rootIndex: 9, qual: 'm' };  // Am
+  chorus.pattern.ch[0] = { rootIndex: 5, qual: 'Maj' }; // F
+  chorus.pattern.ch[16] = { rootIndex: 7, qual: '7' };  // G7
+
+  // Add default arrangement to timeline
+  timeline = [
+    { id: 't1', blockId: intro.id },
+    { id: 't2', blockId: verse.id },
+    { id: 't3', blockId: chorus.id }
+  ];
+
+  activeBlockId = verse.id;
+  renderBlockLibrary();
+  loadBlockIntoEditor();
+  renderTimeline();
+});
+</script>
+</body>
+</html>
