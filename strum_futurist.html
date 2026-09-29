@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>STRUM // 01 — FUTURIST RHYTHM ENGINE</title>
+<style>
+:root {
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-alt: #121212;
+  --surface-hover: #1f1f1f;
+  --line: #262626;
+  --line-strong: #ffffff;
+  --text: #ffffff;
+  --text-dim: #737373;
+  --text-mid: #a3a3a3;
+  --invert-bg: #ffffff;
+  --invert-text: #000000;
+  --hit-flash: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  padding: 16px;
+  min-height: 100vh;
+  letter-spacing: -0.02em;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Top HUD bar */
+.hud-header {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+}
+
+.brand-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--text);
+  font-size: 0.75rem;
+}
+
+.counter-badge {
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-alt);
+  font-weight: 700;
+}
+
+.btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 7px 14px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.08s ease;
+}
+
+button:hover {
+  background: var(--surface-hover);
+  border-color: var(--text);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button.primary {
+  background: var(--invert-bg);
+  color: var(--invert-text);
+  border-color: var(--invert-bg);
+}
+
+button.primary:hover {
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.7));
+}
+
+button.active-toggle {
+  background: var(--invert-bg);
+  color: var(--invert-text);
+  border-color: var(--invert-bg);
+}
+
+/* Parameter Grid */
+.control-grid {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1px;
+  background-color: var(--line);
+}
+
+.param-box {
+  background: var(--surface);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.param-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  justify-content: space-between;
+}
+
+select, input[type=range] {
+  background: var(--surface-alt);
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+select:focus { border-color: var(--text); }
+
+.stage {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .stage { grid-template-columns: 1fr; }
+}
+
+/* Strum Monitor / Oscilloscope Module */
+.hud-monitor {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  position: relative;
+}
+
+.monitor-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+.metronome-frame {
+  width: 140px;
+  height: 140px;
+  border: 1px solid var(--line);
+  background: var(--surface-alt);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  transition: border-color 0.05s ease, background 0.05s ease;
+}
+
+.metronome-frame.rotated {
+  transform: rotate(-90deg);
+}
+
+.metronome-frame.hit {
+  border-color: #ffffff;
+  background: #222222;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+/* Pendulum line & geometric razor pick */
+.metronome-pivot {
+  position: absolute;
+  bottom: 8px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--text);
+  background: var(--invert-bg);
+  border-radius: 50%;
+  z-index: 5;
+}
+
+.pendulum-arm {
+  position: absolute;
+  bottom: 11px;
+  width: 1.5px;
+  height: 105px;
+  background: var(--text);
+  transform-origin: bottom center;
+  transform: rotate(0deg);
+  transition: transform 0.06s cubic-bezier(0.1, 0.8, 0.3, 1);
+  z-index: 4;
+}
+
+.razor-pick {
+  position: absolute;
+  top: -10px;
+  left: -7px;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.razor-pick polygon {
+  fill: #ffffff;
+  transition: fill 0.05s;
+}
+
+.razor-pick.hit polygon {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 6px #ffffff);
+}
+
+.razor-pick.ghost {
+  opacity: 0.3;
+}
+
+/* Vector Direction & Stroke State */
+.stroke-hud {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stroke-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-alt);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.stroke-badge.hit-mode {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.matrix-module {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.matrix-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.grid-viewport {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.grid-table {
+  display: flex;
+  flex-direction: column;
+  min-width: max-content;
+}
+
+.grid-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  height: 42px;
+}
+
+.grid-row:last-child {
+  border-bottom: none;
+}
+
+.row-label {
+  width: 80px;
+  flex: 0 0 80px;
+  padding: 0 10px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 1px solid var(--line);
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 10;
+}
+
+.cells-strip {
+  display: flex;
+  height: 100%;
+}
+
+.step-cell {
+  position: relative;
+  width: 38px;
+  height: 100%;
+  flex: 0 0 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-right: 1px solid #1a1a1a;
+  background: var(--surface);
+  transition: background 0.05s ease;
+}
+
+.step-cell:hover {
+  background: #181818;
+}
+
+/* Sharp subdivisions */
+.step-cell.beat-line {
+  border-left: 1px solid #555555 !important;
+}
+
+.step-cell.bar-line {
+  border-left: 2px solid #ffffff !important;
+}
+
+/* Cell content icons */
+.glyph-node {
+  font-size: 0.72rem;
+  display: none;
+}
+
+.step-cell.active .glyph-node {
+  display: block;
+}
+
+.step-cell.playhead {
+  background: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: inset 0 0 0 1px #ffffff;
+}
+
+.chord-tag {
+  display: none;
+  font-size: 0.65rem;
+  font-weight: 900;
+  background: #ffffff;
+  color: #000000;
+  padding: 2px 5px;
+}
+
+.step-cell.has-chord .chord-tag {
+  display: block;
+}
+
+.ruler-glyph {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.ruler-glyph.main {
+  color: #ffffff;
+  font-size: 0.85rem;
+}
+
+.ruler-glyph.and {
+  color: #a3a3a3;
+}
+
+.hud-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-modal.open {
+  display: flex;
+}
+
+.modal-hud-card {
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid var(--text);
+  background: #000000;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 900;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.key-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.key-matrix.qual {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.key-btn {
+  border: 1px solid var(--line);
+  background: var(--surface-alt);
+  color: var(--text);
+  padding: 8px 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.key-btn:hover { border-color: var(--text); }
+
+.key-btn.selected {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="hud-header">
+    <div class="brand">
+      <span class="brand-glyph">⌖</span>
+      <span>STRUM // 01</span>
+    </div>
+
+    <div class="btn-group">
+      <div class="counter-badge" id="barDisplay">BAR 1 : 1.0</div>
+      <button id="playBtn" class="primary">▶ START</button>
+      <button id="resetBtn">■ RESET</button>
+    </div>
+  </header>
+
+  <div class="control-grid">
+    <div class="param-box">
+      <div class="param-label"><span>BPM</span><span id="bpmVal">100</span></div>
+      <input type="range" id="bpm" min="40" max="220" value="100">
+    </div>
+
+    <div class="param-box">
+      <div class="param-label"><span>METER</span><span>◷</span></div>
+      <select id="timesig">
+        <option value="4-4">4/4</option>
+        <option value="3-4">3/4</option>
+        <option value="2-4">2/4</option>
+        <option value="6-8">6/8</option>
+      </select>
+    </div>
+
+    <div class="param-box">
+      <div class="param-label"><span>COUNT</span><span>🗣</span></div>
+      <select id="voiceMode">
+        <option value="eighth">1 & 2 & 3 & 4 &</option>
+        <option value="quarter">1 2 3 4</option>
+        <option value="none">MUTED</option>
+      </select>
+    </div>
+
+    <div class="param-box">
+      <div class="param-label"><span>SUB-DIV</span><span>∿</span></div>
+      <select id="division">
+        <option value="8beat" selected>8-BEAT (♫)</option>
+        <option value="4beat">4-BEAT (♩)</option>
+        <option value="16beat">16-BEAT (♬)</option>
+      </select>
+    </div>
+
+    <div class="param-box">
+      <div class="param-label"><span>TARGET</span><span>⚑</span></div>
+      <select id="targetTrack">
+        <option value="hh" selected>HH (⬡)</option>
+        <option value="bd">BD (●)</option>
+        <option value="sd">SD (✕)</option>
+        <option value="ch">CH (◆)</option>
+        <option value="any">ALL (*)</option>
+      </select>
+    </div>
+
+    <div class="param-box">
+      <div class="param-label"><span>KEY</span><span id="transVal">0</span></div>
+      <div class="btn-group" style="gap:2px;">
+        <button id="transDown" style="padding:4px 8px; flex:1;">-</button>
+        <button id="transReset" style="padding:4px 8px; flex:1;">0</button>
+        <button id="transUp" style="padding:4px 8px; flex:1;">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <!-- Strum Radar / Pendulum Monitor -->
+    <div class="hud-monitor">
+      <div class="monitor-header">
+        <span>STROKE HUD</span>
+        <button id="rotateBtn" style="padding:2px 6px; font-size:0.65rem;">↕ VERT</button>
+      </div>
+
+      <div class="metronome-frame rotated" id="metroFrame">
+        <!-- Pendulum Needle -->
+        <div class="pendulum-arm" id="metroArm">
+          <svg class="razor-pick" id="metroPick" viewBox="0 0 100 100">
+            <polygon points="50,95 10,20 90,20" />
+          </svg>
+        </div>
+        <div class="metronome-pivot"></div>
+      </div>
+
+      <div class="stroke-hud">
+        <div class="stroke-badge" id="strokeDirBadge">
+          <span>DIR</span>
+          <span id="strokeDirVal">↓ DOWN</span>
+        </div>
+        <div class="stroke-badge" id="strokeActionBadge">
+          <span>ACT</span>
+          <span id="strokeActionVal">GHOST</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="matrix-module">
+      <div class="matrix-toolbar">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span>MATRIX // 1 BAR</span>
+          <button id="clearBtn" style="padding:2px 8px; font-size:0.65rem;">CLEAR</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <span>[ 1 ] BEAT</span>
+          <span>[ & ] OFF-BEAT</span>
+        </div>
+      </div>
+
+      <div class="grid-viewport">
+        <div class="grid-table" id="gridTable">
+          <!-- Rows dynamically rendered -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hud-modal" id="chordModal">
+  <div class="modal-hud-card">
+    <div class="modal-hdr">
+      <span>SELECT CHORD</span>
+      <span id="modalStepInfo" style="color:var(--text-dim);">1:1</span>
+    </div>
+    <div>
+      <div style="font-size:0.65rem; color:var(--text-dim); margin-bottom:4px;">ROOT</div>
+      <div class="key-matrix" id="modalRootKeys"></div>
+    </div>
+    <div>
+      <div style="font-size:0.65rem; color:var(--text-dim); margin-bottom:4px;">TYPE</div>
+      <div class="key-matrix qual" id="modalQualKeys"></div>
+    </div>
+    <div style="display:flex; gap:6px; justify-content:flex-end; border-top:1px solid var(--line); padding-top:10px;">
+      <button id="modalDelBtn" style="margin-right:auto;">CLEAR</button>
+      <button id="modalCancelBtn">ESC</button>
+      <button id="modalConfirmBtn" class="primary">SET</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const CHORD_INTERVALS = {
+  'Maj': [0, 4, 7, 12, 16],
+  'm':   [0, 3, 7, 12, 15],
+  '7':   [0, 4, 7, 10, 16],
+  'm7':  [0, 3, 7, 10, 15],
+  'maj7':[0, 4, 7, 11, 16]
+};
+
+const TRACKS = [
+  { id: 'ruler', sym: '◷', name: 'BEAT' },
+  { id: 'ch',    sym: '◆', name: 'CHORD' },
+  { id: 'hh',    sym: '⬡', name: 'HI-HAT' },
+  { id: 'sd',    sym: '✕', name: 'SNARE' },
+  { id: 'bd',    sym: '●', name: 'KICK' }
+];
+
+let audioCtx = null;
+let isPlaying = false;
+let timerId = null;
+let bpm = 100;
+let stepsPerMeasure = 16;
+let groupSize = 4;
+let currentStep = 0;
+let globalTranspose = 0;
+let isVertical = true;
+
+// Grid data for 1 Bar
+let gridData = {
+  hh: new Array(16).fill(false),
+  sd: new Array(16).fill(false),
+  bd: new Array(16).fill(false),
+  ch: new Array(16).fill(null)
+};
+
+// Initialize standard 8-beat pattern
+for (let s = 0; s < 16; s += 2) gridData.hh[s] = true;
+gridData.bd[0] = true;
+gridData.bd[8] = true;
+gridData.sd[4] = true;
+gridData.sd[12] = true;
+gridData.ch[0] = { root: 0, qual: 'Maj' };
+
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playHiHat(t) {
+  const ctx = getCtx();
+  const buf = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 9000;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.3, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  src.start(t);
+  src.stop(t + 0.04);
+}
+
+function playSnare(t) {
+  const ctx = getCtx();
+  const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 2000;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.6, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  noise.start(t);
+  noise.stop(t + 0.12);
+
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(180, t);
+  const oscGain = ctx.createGain();
+  oscGain.gain.setValueAtTime(0.5, t);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  osc.connect(oscGain);
+  oscGain.connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.09);
+}
+
+function playKick(t) {
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(140, t);
+  osc.frequency.exponentialRampToValueAtTime(36, t + 0.22);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.9, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.26);
+}
+
+function playChord(chord, t) {
+  if (!chord) return;
+  const ctx = getCtx();
+  const root = (chord.root + globalTranspose) % 12;
+  const effective = root < 0 ? root + 12 : root;
+  const intervals = CHORD_INTERVALS[chord.qual] || CHORD_INTERVALS['Maj'];
+  const baseMidi = 48 + effective;
+
+  intervals.forEach((interval, i) => {
+    const freq = 440 * Math.pow(2, (baseMidi + interval - 69) / 12);
+    const noteTime = t + i * 0.015;
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, noteTime);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1400, noteTime);
+    filter.frequency.exponentialRampToValueAtTime(400, noteTime + 1.1);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.2, noteTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 1.2);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(noteTime);
+    osc.stop(noteTime + 1.25);
+  });
+}
+
+function playVocalCount(word, t) {
+  const ctx = getCtx();
+  const profiles = {
+    '1': {
+      dur: 0.1, pitch: [175, 135],
+      formants: [{ f: 580, q: 7, g: 1.0 }, { f: 1050, q: 6, g: 0.9 }],
+      transient: { freq: 280, dur: 0.02 }
+    },
+    '2': {
+      dur: 0.11, pitch: [195, 145],
+      formants: [{ f: 340, q: 8, g: 1.0 }, { f: 880, q: 7, g: 0.8 }],
+      transientNoise: { hp: 5200, dur: 0.025 }
+    },
+    '3': {
+      dur: 0.12, pitch: [185, 140],
+      formants: [{ f: 280, q: 7, g: 0.9 }, { f: 2350, q: 9, g: 1.2 }],
+      transientNoise: { bp: 3900, dur: 0.03 }
+    },
+    '4': {
+      dur: 0.12, pitch: [160, 125],
+      formants: [{ f: 540, q: 6, g: 1.1 }, { f: 980, q: 7, g: 0.8 }],
+      transientNoise: { bp: 2400, dur: 0.035 }
+    },
+    '&': {
+      dur: 0.07, pitch: [240, 205],
+      formants: [{ f: 750, q: 6, g: 1.2 }, { f: 1800, q: 8, g: 1.0 }],
+      click: { freq: 1600, dur: 0.015 }
+    }
+  };
+
+  const p = profiles[word] || profiles['1'];
+  const master = ctx.createGain();
+  master.connect(ctx.destination);
+
+  // Transient Plosive Click
+  if (p.transient) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.frequency.setValueAtTime(p.transient.freq, t);
+    o.frequency.exponentialRampToValueAtTime(70, t + p.transient.dur);
+    g.gain.setValueAtTime(0.7, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + p.transient.dur);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + p.transient.dur + 0.01);
+  } else if (p.click) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(p.click.freq, t);
+    g.gain.setValueAtTime(0.8, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + p.click.dur);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + p.click.dur + 0.01);
+  } else if (p.transientNoise) {
+    const len = Math.floor(ctx.sampleRate * 0.03);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const flt = ctx.createBiquadFilter();
+    if (p.transientNoise.hp) {
+      flt.type = 'highpass';
+      flt.frequency.value = p.transientNoise.hp;
+    } else {
+      flt.type = 'bandpass';
+      flt.frequency.value = p.transientNoise.bp;
+    }
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.7, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+    src.connect(flt); flt.connect(g); g.connect(master);
+    src.start(t); src.stop(t + 0.03);
+  }
+
+  // Vocal Formant Body
+  const vOsc = ctx.createOscillator();
+  vOsc.type = 'sawtooth';
+  vOsc.frequency.setValueAtTime(p.pitch[0], t);
+  vOsc.frequency.exponentialRampToValueAtTime(p.pitch[1], t + p.dur);
+
+  const vGain = ctx.createGain();
+  vGain.gain.setValueAtTime(0.001, t);
+  vGain.gain.linearRampToValueAtTime(0.6, t + 0.01);
+  vGain.gain.exponentialRampToValueAtTime(0.001, t + p.dur);
+
+  p.formants.forEach(f => {
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.value = f.f;
+    bpf.Q.value = f.q;
+    const fg = ctx.createGain();
+    fg.gain.value = f.g;
+    vOsc.connect(bpf);
+    bpf.connect(fg);
+    fg.connect(vGain);
+  });
+
+  vGain.connect(master);
+  vOsc.start(t);
+  vOsc.stop(t + p.dur + 0.01);
+}
+
+function getTransposedChordName(c) {
+  if (!c) return '';
+  const root = (c.root + globalTranspose) % 12;
+  const eff = root < 0 ? root + 12 : root;
+  const qual = c.qual === 'Maj' ? '' : c.qual;
+  return NOTE_NAMES[eff] + qual;
+}
+
+function renderMatrix() {
+  const container = document.getElementById('gridTable');
+  container.innerHTML = '';
+
+  TRACKS.forEach(track => {
+    const row = document.createElement('div');
+    row.className = 'grid-row';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'row-label';
+    lbl.innerHTML = `<span>${track.sym}</span><span>${track.name}</span>`;
+    row.appendChild(lbl);
+
+    const strip = document.createElement('div');
+    strip.className = 'cells-strip';
+
+    for (let s = 0; s < stepsPerMeasure; s++) {
+      const cell = document.createElement('div');
+      cell.className = 'step-cell';
+      cell.dataset.step = s;
+
+      if (s % groupSize === 0) cell.classList.add('beat-line');
+      if (s === 0) cell.classList.add('bar-line');
+
+      if (track.id === 'ruler') {
+        const beatNum = Math.floor(s / groupSize) + 1;
+        const sub = s % groupSize;
+        const half = Math.floor(groupSize / 2);
+        let sym = '·';
+        let cls = 'ruler-glyph';
+        if (sub === 0) { sym = String(beatNum); cls += ' main'; }
+        else if (sub === half) { sym = '&'; cls += ' and'; }
+
+        cell.innerHTML = `<span class="${cls}">${sym}</span>`;
+      } else if (track.id === 'ch') {
+        const tag = document.createElement('div');
+        tag.className = 'chord-tag';
+        if (gridData.ch[s]) {
+          cell.classList.add('has-chord');
+          tag.textContent = getTransposedChordName(gridData.ch[s]);
+        }
+        cell.appendChild(tag);
+        cell.addEventListener('click', () => openChordPicker(s));
+      } else {
+        const glyph = document.createElement('span');
+        glyph.className = 'glyph-node';
+        glyph.textContent = track.sym;
+        cell.appendChild(glyph);
+
+        if (gridData[track.id][s]) cell.classList.add('active');
+
+        cell.addEventListener('click', () => {
+          gridData[track.id][s] = !gridData[track.id][s];
+          cell.classList.toggle('active');
+        });
+      }
+
+      strip.appendChild(cell);
+    }
+
+    row.appendChild(strip);
+    container.appendChild(row);
+  });
+}
+
+function stepIntervalSec() {
+  return (60 / bpm) / 4;
+}
+
+function tick() {
+  const t = getCtx().currentTime + 0.02;
+
+  // Audio Triggers
+  if (gridData.hh[currentStep]) playHiHat(t);
+  if (gridData.sd[currentStep]) playSnare(t);
+  if (gridData.bd[currentStep]) playKick(t);
+  if (gridData.ch[currentStep]) playChord(gridData.ch[currentStep], t);
+
+  // Vocal Counting
+  const voiceMode = document.getElementById('voiceMode').value;
+  if (voiceMode !== 'none') {
+    const beat = Math.floor(currentStep / groupSize) + 1;
+    const sub = currentStep % groupSize;
+    if (sub === 0) {
+      playVocalCount(String(beat), t);
+    } else if (voiceMode === 'eighth' && sub === Math.floor(groupSize / 2)) {
+      playVocalCount('&', t);
+    }
+  }
+
+  // Update UI playhead
+  document.querySelectorAll('.step-cell.playhead').forEach(c => c.classList.remove('playhead'));
+  document.querySelectorAll(`.step-cell[data-step="${currentStep}"]`).forEach(c => c.classList.add('playhead'));
+
+  // Update Metronome Pendulum & Hit Flash
+  updateStrumHUD(currentStep);
+
+  // Display counter
+  const beatIndex = Math.floor(currentStep / groupSize) + 1;
+  const subIndex = currentStep % groupSize;
+  document.getElementById('barDisplay').textContent = `BAR 1 : ${beatIndex}.${subIndex}`;
+
+  currentStep = (currentStep + 1) % stepsPerMeasure;
+}
+
+function updateStrumHUD(step) {
+  const div = document.getElementById('division').value;
+  const target = document.getElementById('targetTrack').value;
+  const arm = document.getElementById('metroArm');
+  const frame = document.getElementById('metroFrame');
+  const pick = document.getElementById('metroPick');
+  const dirVal = document.getElementById('strokeDirVal');
+  const actVal = document.getElementById('strokeActionVal');
+  const actBadge = document.getElementById('strokeActionBadge');
+
+  let isDown = true;
+  if (div === '4beat') {
+    isDown = (Math.floor(step / 4) % 2 === 0);
+  } else if (div === '16beat') {
+    isDown = (step % 2 === 0);
+  } else {
+    isDown = (Math.floor(step / 2) % 2 === 0);
+  }
+
+  const angle = isDown ? -28 : 28;
+  arm.style.transform = `rotate(${angle}deg)`;
+
+  if (isVertical) {
+    dirVal.textContent = isDown ? '↓ DOWN' : '↑ UP';
+  } else {
+    dirVal.textContent = isDown ? '← LEFT' : '→ RIGHT';
+  }
+
+  // Check target hit
+  let isHit = false;
+  if (target === 'any') {
+    isHit = Boolean(gridData.hh[step] || gridData.sd[step] || gridData.bd[step] || gridData.ch[step]);
+  } else if (gridData[target]) {
+    isHit = Boolean(gridData[target][step]);
+  }
+
+  if (isHit) {
+    frame.classList.add('hit');
+    pick.classList.add('hit');
+    pick.classList.remove('ghost');
+    actVal.textContent = 'HIT';
+    actBadge.classList.add('hit-mode');
+  } else {
+    frame.classList.remove('hit');
+    pick.classList.remove('hit');
+    pick.classList.add('ghost');
+    actVal.textContent = 'GHOST';
+    actBadge.classList.remove('hit-mode');
+  }
+}
+
+const playBtn = document.getElementById('playBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+playBtn.addEventListener('click', () => {
+  if (isPlaying) {
+    isPlaying = false;
+    clearInterval(timerId);
+    playBtn.textContent = '▶ START';
+  } else {
+    getCtx();
+    isPlaying = true;
+    playBtn.textContent = '■ PAUSE';
+    tick();
+    timerId = setInterval(tick, stepIntervalSec() * 1000);
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  isPlaying = false;
+  clearInterval(timerId);
+  playBtn.textContent = '▶ START';
+  currentStep = 0;
+  document.querySelectorAll('.step-cell.playhead').forEach(c => c.classList.remove('playhead'));
+  document.getElementById('barDisplay').textContent = `BAR 1 : 1.0`;
+  updateStrumHUD(0);
+});
+
+document.getElementById('bpm').addEventListener('input', (e) => {
+  bpm = Number(e.target.value);
+  document.getElementById('bpmVal').textContent = bpm;
+  if (isPlaying) {
+    clearInterval(timerId);
+    timerId = setInterval(tick, stepIntervalSec() * 1000);
+  }
+});
+
+document.getElementById('timesig').addEventListener('change', (e) => {
+  const [num, den] = e.target.value.split('-').map(Number);
+  stepsPerMeasure = den === 4 ? num * 4 : num * 2;
+  groupSize = den === 4 ? 4 : 3;
+  gridData = {
+    hh: new Array(stepsPerMeasure).fill(false),
+    sd: new Array(stepsPerMeasure).fill(false),
+    bd: new Array(stepsPerMeasure).fill(false),
+    ch: new Array(stepsPerMeasure).fill(null)
+  };
+  currentStep = 0;
+  renderMatrix();
+});
+
+document.getElementById('rotateBtn').addEventListener('click', () => {
+  isVertical = !isVertical;
+  const frame = document.getElementById('metroFrame');
+  const btn = document.getElementById('rotateBtn');
+  if (isVertical) {
+    frame.classList.add('rotated');
+    btn.textContent = '↕ VERT';
+  } else {
+    frame.classList.remove('rotated');
+    btn.textContent = '↔ HORIZ';
+  }
+  updateStrumHUD(currentStep);
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  ['hh', 'sd', 'bd', 'ch'].forEach(t => gridData[t].fill(t === 'ch' ? null : false));
+  renderMatrix();
+});
+
+// Transpose Controls
+document.getElementById('transUp').addEventListener('click', () => {
+  globalTranspose = (globalTranspose + 1) % 12;
+  document.getElementById('transVal').textContent = globalTranspose > 0 ? `+${globalTranspose}` : globalTranspose;
+  renderMatrix();
+});
+document.getElementById('transDown').addEventListener('click', () => {
+  globalTranspose = (globalTranspose - 1) % 12;
+  document.getElementById('transVal').textContent = globalTranspose > 0 ? `+${globalTranspose}` : globalTranspose;
+  renderMatrix();
+});
+document.getElementById('transReset').addEventListener('click', () => {
+  globalTranspose = 0;
+  document.getElementById('transVal').textContent = '0';
+  renderMatrix();
+});
+
+let modalStep = null;
+let modalRoot = 0;
+let modalQual = 'Maj';
+
+function openChordPicker(step) {
+  modalStep = step;
+  const beat = Math.floor(step / groupSize) + 1;
+  const sub = step % groupSize;
+  document.getElementById('modalStepInfo').textContent = `STEP ${step + 1} // ${beat}.${sub}`;
+
+  if (gridData.ch[step]) {
+    modalRoot = gridData.ch[step].root;
+    modalQual = gridData.ch[step].qual;
+  } else {
+    modalRoot = 0;
+    modalQual = 'Maj';
+  }
+
+  renderChordModalKeys();
+  document.getElementById('chordModal').classList.add('open');
+}
+
+function renderChordModalKeys() {
+  const rootWrap = document.getElementById('modalRootKeys');
+  rootWrap.innerHTML = '';
+  NOTE_NAMES.forEach((name, i) => {
+    const b = document.createElement('div');
+    b.className = `key-btn ${i === modalRoot ? 'selected' : ''}`;
+    b.textContent = name;
+    b.addEventListener('click', () => {
+      modalRoot = i;
+      renderChordModalKeys();
+    });
+    rootWrap.appendChild(b);
+  });
+
+  const qualWrap = document.getElementById('modalQualKeys');
+  qualWrap.innerHTML = '';
+  Object.keys(CHORD_INTERVALS).forEach(q => {
+    const b = document.createElement('div');
+    b.className = `key-btn ${q === modalQual ? 'selected' : ''}`;
+    b.textContent = q;
+    b.addEventListener('click', () => {
+      modalQual = q;
+      renderChordModalKeys();
+    });
+    qualWrap.appendChild(b);
+  });
+}
+
+document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+  if (modalStep !== null) {
+    gridData.ch[modalStep] = { root: modalRoot, qual: modalQual };
+    renderMatrix();
+  }
+  document.getElementById('chordModal').classList.remove('open');
+});
+
+document.getElementById('modalDelBtn').addEventListener('click', () => {
+  if (modalStep !== null) {
+    gridData.ch[modalStep] = null;
+    renderMatrix();
+  }
+  document.getElementById('chordModal').classList.remove('open');
+});
+
+document.getElementById('modalCancelBtn').addEventListener('click', () => {
+  document.getElementById('chordModal').classList.remove('open');
+});
+
+// Initialization
+window.addEventListener('load', () => {
+  renderMatrix();
+  updateStrumHUD(0);
+});
+</script>
+</body>
+</html>
