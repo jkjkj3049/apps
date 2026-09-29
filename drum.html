@@ -6,48 +6,206 @@
 <title>Rhythm Arranger Pro - 節奏編曲訓練機</title>
 <style>
 :root {
-  --bg: #0c0e14;
-  --panel: #161923;
-  --panel-alt: #1e2230;
-  --panel-hover: #272d40;
-  --line: #2e3447;
-  --line-strong: #4a5472;
-  --text: #f1f4fa;
-  --muted: #8b95ad;
-  --accent: #ffb703;
-  --accent-glow: rgba(255, 183, 3, 0.4);
-  --loop-color: rgba(56, 189, 248, 0.28);
-  --loop-border: #38bdf8;
+  --bg: #f8f9fd;
+  --panel: #ffffff;
+  --panel-alt: #f0f3f9;
+  --panel-hover: #e4e8f2;
+  --line: #d8deeb;
+  --line-strong: #98a2b8;
+  --text: #0f121d;
+  --muted: #5e677c;
+  --accent: #254df2;
+  --accent-glow: rgba(37, 77, 242, 0.28);
+  --loop-color: rgba(37, 77, 242, 0.12);
+  --loop-border: #254df2;
   
-  --hh: #38bdf8;
-  --bd: #fb7185;
-  --sd: #c084fc;
-  --ch: #34d399;
-  --ruler: #fbbf24;
-  --bar-line: #f59e0b;
+  --hh: #4a5266;
+  --bd: #1c2130;
+  --sd: #373e52;
+  --ch: #254df2;
+  --ruler: #626a80;
+  --bar-line: #1e2230;
 
-  --cell-even: #191c28;
-  --cell-odd: #131620;
-  --cell-hover: #23283a;
+  --cell-even: #ffffff;
+  --cell-odd: #f3f6fa;
+  --cell-hover: #e5ebf7;
 }
+
+/* --- 節拍器指針擺臂與刷弦輔助樣式 --- */
+.strum-companion-card {
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.strum-widget-container {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+
+/* 節拍器外層旋轉固定座 (確保 90度旋轉時版面不受剪裁) */
+.metronome-mount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 175px;
+  height: 165px;
+}
+
+/* 節拍器機身本體 (梯形立體機構) */
+.metronome-case {
+  position: relative;
+  width: 155px;
+  height: 145px;
+  background: linear-gradient(180deg, #ffffff 0%, #e9ecf5 100%);
+  border: 2px solid var(--line-strong);
+  border-radius: 12px 12px 6px 6px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.08);
+  display: flex;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.08s ease, border-color 0.08s ease;
+}
+
+/* 90度上下刷模式 */
+.metronome-case.vertical-orient {
+  transform: rotate(-90deg);
+}
+
+/* 拍點命中時機身同步發光閃爍 */
+.metronome-case.case-hit {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 20px var(--accent-glow), inset 0 0 16px rgba(37, 77, 242, 0.18) !important;
+}
+
+/* 節拍器刻度弧形尺規面板 */
+.metronome-scale {
+  position: absolute;
+  top: 12px;
+  width: 120px;
+  height: 42px;
+  border-bottom: 1px solid var(--line-strong);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 6px 4px 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+.metronome-scale .scale-center {
+  color: var(--text);
+  font-size: 0.72rem;
+}
+
+/* 擺臂樞紐旋轉軸心 (置於底部) */
+.metronome-pivot {
+  position: absolute;
+  bottom: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dfe4f0;
+  border: 2px solid var(--line-strong);
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* 節拍器金屬擺臂 (Pendulum Arm) */
+.metronome-arm {
+  position: absolute;
+  bottom: 18px;
+  width: 3.5px;
+  height: 108px;
+  background: linear-gradient(180deg, #1c2130 0%, #5d677d 60%, #9ba6bd 100%);
+  border-radius: 2px;
+  transform-origin: bottom center;
+  transform: rotate(0deg);
+  transition: transform 0.08s cubic-bezier(0.2, 0.8, 0.4, 1);
+  z-index: 8;
+  box-shadow: 0 0 4px rgba(0,0,0,0.25);
+}
+
+/* 擺臂上的可調配重滑塊 (Weight Bob) */
+.metronome-weight {
+  position: absolute;
+  top: 30px;
+  left: -6.5px;
+  width: 16px;
+  height: 14px;
+  background: #eef2fa;
+  border: 1.5px solid #848fa5;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+}
+
+/* 擺臂頂端的吉他 Pick 撥片指示器 */
+.metronome-pick {
+  position: absolute;
+  top: -12px;
+  left: -8.5px;
+  width: 20px;
+  height: 24px;
+  transition: filter 0.08s ease, transform 0.08s ease;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+}
+
+.metronome-pick.hit-flash {
+  filter: drop-shadow(0 0 8px #254df2) drop-shadow(0 0 14px rgba(37,77,242,0.85));
+  transform: scale(1.32);
+}
+
+.metronome-pick.ghost {
+  opacity: 0.35;
+}
+
+/* 狀態面板 */
+.strum-status-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 190px;
+}
+.strum-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  background: var(--panel-alt);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.strum-badge.down { color: var(--text); border-color: var(--line-strong); }
+.strum-badge.up   { color: var(--muted); border-color: var(--line); }
+.strum-badge.hit  { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+.strum-badge.ghost-txt { color: var(--muted); border-style: dashed; }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #f2f5fa;
+    --bg: #f4f5f8;
     --panel: #ffffff;
-    --panel-alt: #edf1f8;
-    --panel-hover: #e2e8f2;
-    --line: #d1d7e5;
-    --line-strong: #9da8c2;
-    --text: #141720;
-    --muted: #64748b;
-    --accent: #d97706;
-    --loop-color: rgba(14, 165, 233, 0.2);
-    --loop-border: #0284c7;
+    --panel-alt: #ebeef5;
+    --panel-hover: #dfe3ed;
+    --line: #d1d5e2;
+    --line-strong: #9ca3b8;
+    --text: #11141c;
+    --muted: #646c80;
+    --accent: #254df2;
+    --loop-color: rgba(37, 77, 242, 0.14);
+    --loop-border: #254df2;
     --cell-even: #ffffff;
-    --cell-odd: #f3f6fb;
-    --cell-hover: #e3e8f3;
-    --bar-line: #ea580c;
+    --cell-odd: #f3f5fa;
+    --cell-hover: #e5e8f2;
+    --bar-line: #6b7280;
   }
 }
 
@@ -148,13 +306,35 @@ button {
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  color: #0f1117;
+  color: #ffffff;
   background: var(--accent);
   transition: all 0.12s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
+}
+
+button:hover { filter: brightness(1.15); }
+button:active { transform: scale(0.97); }
+button.secondary {
+  background: var(--panel-alt);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+button.secondary:hover {
+  background: var(--panel-hover);
+  border-color: var(--line-strong);
+}
+button.danger {
+  background: #1e212b;
+  color: #f87171;
+  border: 1px solid #374151;
+}
+button.active-toggle {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 button:hover { filter: brightness(1.12); }
@@ -252,10 +432,18 @@ button.active-toggle {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #ff0055;
+  background: var(--accent);
   z-index: 10;
   pointer-events: none;
-  box-shadow: 0 0 8px #ff0055;
+  box-shadow: 0 0 10px var(--accent);
+}
+.tl-playhead-line::before {
+  content: '▼';
+  position: absolute;
+  top: -2px;
+  left: -5px;
+  font-size: 11px;
+  color: var(--accent);
 }
 .tl-playhead-line::before {
   content: '▼';
@@ -456,11 +644,11 @@ button.active-toggle {
   display: none;
   font-size: 0.72rem;
   font-weight: 800;
-  color: #052618;
-  background: var(--ch);
+  color: #ffffff;
+  background: var(--accent);
   padding: 3px 6px;
   border-radius: 5px;
-  box-shadow: 0 2px 6px rgba(52, 211, 153, 0.4);
+  box-shadow: 0 2px 6px rgba(37, 77, 242, 0.4);
   white-space: nowrap;
 }
 .cell.has-chord .chord-badge { display: block; }
@@ -475,8 +663,8 @@ button.active-toggle {
   font-weight: 800;
   color: var(--muted);
 }
-.ruler-text.main-beat { color: var(--accent); font-size: 0.9rem; }
-.ruler-text.and-beat  { color: #38bdf8; }
+.ruler-text.main-beat { color: var(--text); font-size: 0.9rem; }
+.ruler-text.and-beat  { color: var(--accent); }
 
 .modal-overlay {
   display: none;
@@ -532,10 +720,10 @@ button.active-toggle {
   transition: all 0.1s;
 }
 .modal-btn.active {
-  background: var(--ch);
-  color: #062e20;
-  border-color: var(--ch);
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 .modal-footer {
   display: flex;
@@ -551,7 +739,7 @@ button.active-toggle {
   <header>
     <div>
       <h1>🎸 Rhythm Arranger Pro</h1>
-      <p class="sub">Block 模組化時間軸 · 自由匡選小節循環 · 錨點跳轉 · 人聲數拍 (1 & 2 &) · 和弦伴奏</p>
+      <p class="sub">節拍器擺臂 · 4/8/16 Beat 擺動 · 單小節循環 · 極簡單色風格 (#254df2)</p>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
       <div class="badge-counter" id="songPosDisplay">BAR 1 : 1.0</div>
@@ -638,7 +826,7 @@ button.active-toggle {
         <label style="font-size:0.75rem;">從第</label>
         <input type="number" id="loopStartBar" min="1" max="64" value="1" style="width:50px; padding:3px 5px;">
         <label style="font-size:0.75rem;">到第</label>
-        <input type="number" id="loopEndBar" min="1" max="64" value="4" style="width:50px; padding:3px 5px;">
+        <input type="number" id="loopEndBar" min="1" max="64" value="1" style="width:50px; padding:3px 5px;">
         <label style="font-size:0.75rem;">小節</label>
         <button id="appendActiveBlockBtn" style="padding:5px 10px;">+ 放入當前 Block</button>
         <button id="clearTimelineBtn" class="secondary" style="padding:5px 10px;">清空時間軸</button>
@@ -652,6 +840,122 @@ button.active-toggle {
           <div class="loop-range-overlay" id="loopOverlay"></div>
           <div class="tl-playhead-line" id="tlPlayhead"></div>
           <!-- Ticks dynamically injected -->
+        </div>
+      </div>
+
+      <!-- Timeline Block Instances Track -->
+      <div class="timeline-track-wrap" id="tlTrackWrap">
+        <div class="timeline-track" id="timelineTrack">
+          <!-- Placed blocks injected here -->
+        </div>
+      </div>
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px;">
+      <span>💡 提示：在上方尺規刻度上「點擊」可立即跳轉播放位置 (Anchor)；預設為 1 小節循環訓練。</span>
+      <div id="selectedTlBlockActions" style="display:none; gap:6px; align-items:center;">
+        <span id="selectedBlockName" style="color:var(--accent); font-weight:bold;">已選中 Block</span>
+        <button id="dupTlBlockBtn" class="secondary" style="padding:3px 8px; font-size:0.7rem;">複製</button>
+        <button id="delTlBlockBtn" class="danger" style="padding:3px 8px; font-size:0.7rem;">刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">
+      <span>📦 Block 模組庫 (點擊切換正在編輯的節奏型)</span>
+      <div style="display:flex; gap:6px;">
+        <button id="newBlockBtn" class="secondary" style="padding:4px 9px; font-size:0.75rem;">+ 新增 Block</button>
+        <button id="dupBlockBtn" class="secondary" style="padding:4px 9px; font-size:0.75rem;">複製當前</button>
+      </div>
+    </div>
+    <div class="library-grid" id="blockLibraryGrid">
+      <!-- Injected pattern cards -->
+    </div>
+  </div>
+
+  <!-- 節拍器指針擺臂與刷弦輔助面板 -->
+  <div class="strum-companion-card">
+    <div class="section-title" style="margin-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>⏱️ 節拍器指針示範 (上下刷 / 左右擺動 · 拍點全機閃爍)</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; font-size:0.75rem; flex-wrap:wrap;">
+        <button id="toggleOrientationBtn" class="secondary" style="padding:4px 9px; font-size:0.75rem;">
+          🔄 模式：上下刷 (90° Vertical)
+        </button>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="color:var(--muted); font-weight:700;">擺動劃分 (Division):</label>
+          <select id="metronomeBeatDivision" style="padding:3px 8px; font-size:0.78rem;">
+            <option value="8beat" selected>8 Beat (八分音符正反拍 · 推薦)</option>
+            <option value="4beat">4 Beat (四分音符正拍 · 穩重)</option>
+            <option value="16beat">16 Beat (十六分音符 · 快速切分)</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="color:var(--muted); font-weight:700;">連動偵測打擊樂器：</label>
+          <select id="strumDetectTrack" style="padding:3px 8px; font-size:0.78rem;">
+            <option value="hh" selected>Hi-Hat 腳踏鈸</option>
+            <option value="bd">Bass Drum 大鼓</option>
+            <option value="sd">Snare 小鼓</option>
+            <option value="ch">Chords 和弦伴奏點</option>
+            <option value="any">任何鼓點 (Any Beat)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="strum-widget-container">
+      <!-- 經典節拍器機身外座 (支援 90 度上下旋轉) -->
+      <div class="metronome-mount">
+        <div class="metronome-case vertical-orient" id="metronomeCase">
+          <div class="metronome-scale">
+            <span id="scaleLabelL">↓ Down</span>
+            <span class="scale-center">●</span>
+            <span id="scaleLabelR">↑ Up</span>
+          </div>
+
+          <!-- 旋轉擺臂 -->
+          <div class="metronome-arm" id="metronomeArm">
+            <div class="metronome-weight"></div>
+            <!-- 頂部指針撥片 (Pick) -->
+            <svg class="metronome-pick" id="metronomePick" viewBox="0 0 100 120">
+              <path d="M 50 115 C 42 100 10 50 15 25 C 20 5 80 5 85 25 C 90 50 58 100 50 115 Z" 
+                    fill="#254df2" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
+              <circle cx="50" cy="38" r="9" fill="rgba(255,255,255,0.3)" />
+            </svg>
+          </div>
+
+          <div class="metronome-pivot"></div>
+        </div>
+      </div>
+
+      <!-- 學生手勢指引即時狀態 -->
+      <div class="strum-status-panel">
+        <div style="font-size:0.75rem; color:var(--muted); font-weight:700;">手勢/方向 (Strum Stroke):</div>
+        <div id="strumDirBadge" class="strum-badge down">↓ 正拍下刷 (Down)</div>
+        <div style="font-size:0.75rem; color:var(--muted); font-weight:700; margin-top:2px;">刷弦指令 (Pick Action):</div>
+        <div id="strumActionBadge" class="strum-badge ghost-txt">💨 空揮 (Ghost)</div>
+      </div>
+
+      <div style="font-size:0.74rem; color:var(--muted); line-height:1.45; max-width:440px;">
+        💡 <b>給吉他學生的練習秘訣：</b><br>
+        • <b style="color:var(--text);">上下刷模式 (90°)：</b> 指針朝下擺動對應吉他<b>下刷 (Down ↓)</b>，朝上對應<b>上刷 (Up ↑)</b>，完全符合右手擊弦軌跡！<br>
+        • 切換至 <b style="color:var(--accent);">8 Beat</b> 掌握八分音符的「下、上、下、上」基底律動。<br>
+        • 命中鼓點時，撥片與<b>節拍器機身會同步爆發高光（💥 實刷）</b>，其餘時間保持平穩空刷維持右手慣性。
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="padding:12px;">
+    <div class="section-title" style="margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span id="editorBlockTitle" style="font-size:1rem; color:var(--text);">當前編輯：Block 1</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:0.75rem; color:var(--muted);">名稱:</label>
+          <input type="text" id="editBlockNameInput" style="width:110px; padding:3px 6px;">
+          <label style="font-size:0.75rem; color:var(--muted);">小節數:</label>
+          <input type="number" id="editBlockBarsInput" min="1" max="16" value="1" style="width:55px; padding:3px 6px;">
         </div>
       </div>
 
@@ -683,6 +987,66 @@ button.active-toggle {
     </div>
     <div class="library-grid" id="blockLibraryGrid">
       <!-- Injected pattern cards -->
+    </div>
+  </div>
+
+  <!-- 吉他手勢與刷弦示意卡片 -->
+  <div class="strum-companion-card">
+    <div class="section-title" style="margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>🎸 吉他右手刷弦示意 (上下刷手勢 + 拍點撞擊閃爍)</span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:0.75rem;">
+        <label style="color:var(--muted); font-weight:700;">連動偵測打擊樂器：</label>
+        <select id="strumDetectTrack" style="padding:3px 8px; font-size:0.78rem;">
+          <option value="hh" selected>Hi-Hat 腳踏鈸 (最適合八分音符碎拍)</option>
+          <option value="bd">Bass Drum 大鼓 (重拍下刷卡點)</option>
+          <option value="sd">Snare 小鼓 (2/4 正拍切分音)</option>
+          <option value="ch">Chords 和弦伴奏點</option>
+          <option value="any">任何鼓點 (Any Beat)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="strum-widget-container">
+      <!-- 吉他弦與撥片即時手勢動畫區 -->
+      <div class="guitar-fretboard" id="guitarFretboard">
+        <div class="guitar-string" id="gStr6"></div>
+        <div class="guitar-string" id="gStr5"></div>
+        <div class="guitar-string" id="gStr4"></div>
+        <div class="guitar-string" id="gStr3"></div>
+        <div class="guitar-string" id="gStr2"></div>
+        <div class="guitar-string" id="gStr1"></div>
+
+        <!-- 3D 質感手持吉他 Pick -->
+        <svg class="strum-pick-hand" id="strumPick" viewBox="0 0 100 120">
+          <defs>
+            <linearGradient id="pickGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffb703" />
+              <stop offset="60%" stop-color="#fb7185" />
+              <stop offset="100%" stop-color="#db2777" />
+            </linearGradient>
+          </defs>
+          <path d="M 50 115 C 42 100 10 50 15 25 C 20 5 80 5 85 25 C 90 50 58 100 50 115 Z" 
+                fill="url(#pickGrad)" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
+          <circle cx="50" cy="38" r="9" fill="rgba(0,0,0,0.25)" />
+          <path d="M 45 35 L 55 35 M 50 30 L 50 43" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <!-- 學生手勢指引即時狀態 -->
+      <div class="strum-status-panel">
+        <div style="font-size:0.75rem; color:var(--muted); font-weight:700;">手勢方向 (Strum Stroke):</div>
+        <div id="strumDirBadge" class="strum-badge down">↓ 正拍下刷 (Down)</div>
+        <div style="font-size:0.75rem; color:var(--muted); font-weight:700; margin-top:2px;">刷弦指令 (Pick Action):</div>
+        <div id="strumActionBadge" class="strum-badge ghost-txt">💨 空揮 (Ghost)</div>
+      </div>
+
+      <div style="font-size:0.74rem; color:var(--muted); line-height:1.45; max-width:420px;">
+        💡 <b>給吉他學生的練習秘訣：</b><br>
+        • <b style="color:var(--accent);">「手絕對不要停！」</b> 就算該拍沒有聲音，右手也要保持「下、上、下、上」的慣性空刷（Ghost Strum）。<br>
+        • 當選中的鼓點命中時，撥片會瞬間爆發<b style="color:#ef4444;">高光</b>且琴弦振動，此時再真正「碰到琴弦發聲」！
+      </div>
     </div>
   </div>
 
@@ -784,9 +1148,10 @@ const CHORD_INTERVALS = {
   'maj7':[0, 4, 7, 11, 16]
 };
 
+// 嚴格限定為單一顏色 #254df2 與灰階色譜
 const BLOCK_COLORS = [
-  '#4f46e5', '#0284c7', '#059669', '#d97706',
-  '#db2777', '#7c3aed', '#dc2626', '#0d9488'
+  '#254df2', '#1e2230', '#2a3044', '#171a26',
+  '#254df2', '#32394f', '#212636', '#141824'
 ];
 
 const TRACK_DEFS = [
@@ -809,6 +1174,7 @@ let isLoopEnabled = true;
 let stepsPerMeasure = 16;
 let groupSize = 4;
 let bpm = 100;
+let isMetronomeVertical = true; // 預設 90度上下刷
 
 // Block Library and Timeline Storage
 let blocks = [];
@@ -816,11 +1182,11 @@ let activeBlockId = null;
 let timeline = []; // Array of instances: { id, blockId }
 let selectedTlIndex = null;
 
-// Playhead & Scrubber State
+// Playhead & Scrubber State (預設以 1 小節為基準)
 let currentTimelineBar = 1; // 1-indexed for visual
 let currentStepInBar = 0;   // 0 .. stepsPerMeasure-1
 let loopStartBar = 1;
-let loopEndBar = 4;
+let loopEndBar = 1;
 
 // Modal & Chord Brush State
 let chordMode = 'click';
@@ -1185,12 +1551,12 @@ function createNewBlock(name, bars, colorIdx = 0) {
   const block = {
     id,
     name: name || `Pattern ${blocks.length + 1}`,
-    bars: bars || 2,
+    bars: bars || 1, // 預設 1 小節
     color,
-    pattern: createDefaultPattern(bars || 2)
+    pattern: createDefaultPattern(bars || 1)
   };
 
-  // Populate basic rock beat as starter on Block 1
+  // Populate basic rock beat as starter on Block 1 (1 bar default)
   if (blocks.length === 0) {
     for (let b = 0; b < block.bars; b++) {
       const offset = b * stepsPerMeasure;
@@ -1203,7 +1569,7 @@ function createNewBlock(name, bars, colorIdx = 0) {
       block.pattern.sd[offset + 4] = true;
       block.pattern.sd[offset + 12] = true;
       // Basic chords
-      block.pattern.ch[offset + 0] = { rootIndex: (b * 5) % 12, qual: 'Maj' };
+      block.pattern.ch[offset + 0] = { rootIndex: 0, qual: 'Maj' };
     }
   }
 
@@ -1571,6 +1937,80 @@ function getStepInterval() {
   return (60 / bpm) / 4; // 16th note timing
 }
 
+function updateMetronomeVisualizer(stepInMeasure, evt) {
+  const caseEl = document.getElementById('metronomeCase');
+  const armEl = document.getElementById('metronomeArm');
+  const pickEl = document.getElementById('metronomePick');
+  const dirBadge = document.getElementById('strumDirBadge');
+  const actionBadge = document.getElementById('strumActionBadge');
+  const beatDivision = document.getElementById('metronomeBeatDivision')?.value || '8beat';
+  const detectTrack = document.getElementById('strumDetectTrack')?.value || 'hh';
+
+  if (!armEl || !pickEl || !dirBadge || !actionBadge || !caseEl) return;
+
+  const maxAngle = 28; // 最大擺動角度 (±28deg)
+  let angle = 0;
+  let isDownbeat = true;
+
+  if (beatDivision === '4beat') {
+    // 4 Beat: 每四格 (四分音符一拍) 擺動一次
+    const quarterBeat = Math.floor(stepInMeasure / 4);
+    isDownbeat = (quarterBeat % 2 === 0);
+    angle = isDownbeat ? -maxAngle : maxAngle;
+  } else if (beatDivision === '16beat') {
+    // 16 Beat: 每一格急速切換
+    isDownbeat = (stepInMeasure % 2 === 0);
+    angle = isDownbeat ? -maxAngle : maxAngle;
+  } else {
+    // 8 Beat (預設): 每兩格 (八分音符正反拍) 擺動一次
+    const eighthBeat = Math.floor(stepInMeasure / 2);
+    isDownbeat = (eighthBeat % 2 === 0);
+    angle = isDownbeat ? -maxAngle : maxAngle;
+  }
+
+  // 套用擺臂角度
+  armEl.style.transform = `rotate(${angle}deg)`;
+
+  // 手勢指示標籤 (依據上下模式或左右模式顯示)
+  let strokeText = '';
+  if (isMetronomeVertical) {
+    strokeText = isDownbeat ? '↓ 向下正拍下刷 (Down)' : '↑ 向上反拍上刷 (Up)';
+  } else {
+    strokeText = isDownbeat ? '← 左向正拍下刷 (Down)' : '→ 右向反拍上刷 (Up)';
+  }
+
+  dirBadge.textContent = strokeText;
+  dirBadge.className = `strum-badge ${isDownbeat ? 'down' : 'up'}`;
+
+  // 檢查目標打擊樂器是否有命中拍點 (Hit Detection)
+  let isHit = false;
+  if (evt && evt.block) {
+    const { block, stepInPattern } = evt;
+    if (detectTrack === 'any') {
+      isHit = Boolean(block.pattern.hh[stepInPattern] || block.pattern.sd[stepInPattern] || block.pattern.bd[stepInPattern]);
+    } else if (detectTrack === 'ch') {
+      isHit = Boolean(block.pattern.ch[stepInPattern]);
+    } else if (block.pattern[detectTrack]) {
+      isHit = Boolean(block.pattern[detectTrack][stepInPattern]);
+    }
+  }
+
+  // 命中高光閃爍 (撥片 + 機身本體一起閃爍)
+  if (isHit) {
+    pickEl.classList.remove('ghost');
+    pickEl.classList.add('hit-flash');
+    caseEl.classList.add('case-hit');
+    actionBadge.textContent = '💥 實刷 (HIT!)';
+    actionBadge.className = 'strum-badge hit';
+  } else {
+    pickEl.classList.remove('hit-flash');
+    pickEl.classList.add('ghost');
+    caseEl.classList.remove('case-hit');
+    actionBadge.textContent = '💨 空揮 (Ghost)';
+    actionBadge.className = 'strum-badge ghost-txt';
+  }
+}
+
 function resolveTimelineCurrentEvent() {
   // If timeline is empty or mode is 'block', play the current active editor block
   if (playMode === 'block' || timeline.length === 0) {
@@ -1621,6 +2061,7 @@ function tick() {
   triggerVoiceCount(currentStepInBar, time);
   updateTimelinePlayheadVisual();
   updateSongPositionDisplay();
+  updateMetronomeVisualizer(currentStepInBar, evt);
 
   // Step advancement
   currentStepInBar++;
@@ -1915,26 +2356,39 @@ document.getElementById('chordModal').addEventListener('click', (e) => {
   if (e.target.id === 'chordModal') closeChordModal();
 });
 
+// 方向旋轉切換按鈕 (上下刷 90° vs 左右擺動)
+const toggleOrientationBtn = document.getElementById('toggleOrientationBtn');
+if (toggleOrientationBtn) {
+  toggleOrientationBtn.addEventListener('click', () => {
+    isMetronomeVertical = !isMetronomeVertical;
+    const caseEl = document.getElementById('metronomeCase');
+    const labelL = document.getElementById('scaleLabelL');
+    const labelR = document.getElementById('scaleLabelR');
+
+    if (isMetronomeVertical) {
+      caseEl.classList.add('vertical-orient');
+      toggleOrientationBtn.textContent = '🔄 模式：上下刷 (90° Vertical)';
+      if (labelL) labelL.textContent = '↓ Down';
+      if (labelR) labelR.textContent = '↑ Up';
+    } else {
+      caseEl.classList.remove('vertical-orient');
+      toggleOrientationBtn.textContent = '🔄 模式：左右擺動 (Horizontal)';
+      if (labelL) labelL.textContent = 'L (↓)';
+      if (labelR) labelR.textContent = 'R (↑)';
+    }
+  });
+}
+
 window.addEventListener('load', () => {
-  // Create preset blocks: Intro, Verse, Chorus
-  const intro = createNewBlock('Intro', 2, 0);
-  const verse = createNewBlock('Verse A', 2, 1);
-  const chorus = createNewBlock('Chorus', 2, 2);
+  // 預設為 1 小節 Block
+  const groove1 = createNewBlock('Pattern 1', 1, 0);
 
-  // Setup basic chords for Verse & Chorus
-  verse.pattern.ch[0] = { rootIndex: 0, qual: 'Maj' }; // C
-  verse.pattern.ch[16] = { rootIndex: 9, qual: 'm' };  // Am
-  chorus.pattern.ch[0] = { rootIndex: 5, qual: 'Maj' }; // F
-  chorus.pattern.ch[16] = { rootIndex: 7, qual: '7' };  // G7
-
-  // Add default arrangement to timeline
+  // Add default arrangement to timeline (預設 1 小節)
   timeline = [
-    { id: 't1', blockId: intro.id },
-    { id: 't2', blockId: verse.id },
-    { id: 't3', blockId: chorus.id }
+    { id: 't1', blockId: groove1.id }
   ];
 
-  activeBlockId = verse.id;
+  activeBlockId = groove1.id;
   renderBlockLibrary();
   loadBlockIntoEditor();
   renderTimeline();
