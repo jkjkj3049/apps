@@ -469,7 +469,7 @@ select:focus { border-color: var(--text); }
 }
 
 .key-matrix.qual {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .key-btn {
@@ -639,11 +639,13 @@ select:focus { border-color: var(--text); }
 <script>
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const CHORD_INTERVALS = {
-  'Maj': [0, 4, 7, 12, 16],
-  'm':   [0, 3, 7, 12, 15],
-  '7':   [0, 4, 7, 10, 16],
-  'm7':  [0, 3, 7, 10, 15],
-  'maj7':[0, 4, 7, 11, 16]
+  'Maj':  [0, 4, 7, 12, 16],
+  'm':    [0, 3, 7, 12, 15],
+  '5':    [0, 7, 12],          // 5th Power Chord (Root + 5th + Octave)
+  'Root': [0, 12],             // Root Only (Root + Octave bass punch)
+  '7':    [0, 4, 7, 10, 16],
+  'm7':   [0, 3, 7, 10, 15],
+  'maj7': [0, 4, 7, 11, 16]
 };
 
 const TRACKS = [
@@ -888,7 +890,8 @@ function getTransposedChordName(c) {
   if (!c) return '';
   const root = (c.root + globalTranspose) % 12;
   const eff = root < 0 ? root + 12 : root;
-  const qual = c.qual === 'Maj' ? '' : c.qual;
+  let qual = c.qual === 'Maj' ? '' : c.qual;
+  if (c.qual === 'Root') qual = '(1)';
   return NOTE_NAMES[eff] + qual;
 }
 
